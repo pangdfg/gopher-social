@@ -17,13 +17,13 @@ var (
 
 // User model
 type User struct {
-	ID        int64      `gorm:"primaryKey" json:"id"`
+	ID        uint      `gorm:"primaryKey" json:"id"`
 	Email     string    `gorm:"uniqueIndex;size:255" json:"email"`
 	Username  string    `gorm:"uniqueIndex;size:255" json:"username"`
 	Password  password  `gorm:"-" json:"-"`
 	PasswordHash string `gorm:"size:255" json:"-"`
 	IsActive  bool      `gorm:"default:false" json:"is_active"`
-	RoleID    int64
+	RoleID    uint
 	Role      Role
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -74,7 +74,7 @@ func (s *UserStore) Create(ctx context.Context,user *User) error {
 }
 
 
-func (s *UserStore) GetByID(ctx context.Context, userID int64) (*User, error) {
+func (s *UserStore) GetByID(ctx context.Context, userID uint) (*User, error) {
 	user := &User{}
 	err := s.db.WithContext(ctx).
 		Preload("Role").
@@ -108,7 +108,7 @@ func (s *UserStore) Activate(ctx context.Context, userID string) error {
 	return s.db.Model(&User{}).Where("id = ?", userID).Update("is_active", true).Error
 }
 
-func (s *UserStore) Delete(ctx context.Context, userID int64) error {
+func (s *UserStore) Delete(ctx context.Context, userID uint) error {
 	tx := s.db.Delete(&User{}, userID)
 	if tx.Error != nil {
 		return tx.Error

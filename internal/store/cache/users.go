@@ -14,7 +14,7 @@ type UserStore struct {
 }
 
 
-func (s *UserStore) Get(ctx context.Context, userID int64) (*store.User, error) {
+func (s *UserStore) Get(ctx context.Context, userID uint) (*store.User, error) {
     cacheKey := fmt.Sprintf("user-%d", userID)
     val, err := s.rdb.Get(ctx, cacheKey).Result()
     if err != nil {
@@ -39,7 +39,7 @@ func (s *UserStore) Set(ctx context.Context, user *store.User) error {
     return s.rdb.Set(ctx, cacheKey, b, 0).Err()
 }
 
-func (s *UserStore) Delete(ctx context.Context, userID int64) {
+func (s *UserStore) Delete(ctx context.Context, userID uint) {
     cacheKey := fmt.Sprintf("user-%d", userID)
 	s.rdb.Del(ctx, cacheKey)
 }

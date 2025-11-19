@@ -8,9 +8,9 @@ import (
 )
 
 type UserCacheStore interface {
-	Get(context.Context, int64) (*store.User, error)
+	Get(context.Context, uint) (*store.User, error)
 	Set(context.Context, *store.User) error
-	Delete(context.Context, int64)
+	Delete(context.Context, uint)
 }
 
 type Storage struct {

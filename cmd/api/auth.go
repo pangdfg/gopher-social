@@ -25,7 +25,7 @@ type UserWithToken struct {
 }
 
 
-func (app *application) registerUserHandlerFiber(c *fiber.Ctx) error {
+func (app *application) registerUserHandler(c *fiber.Ctx) error {
 	var payload RegisterUserPayload
 
 	// Parse JSON

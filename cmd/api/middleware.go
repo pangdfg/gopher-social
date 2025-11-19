@@ -37,7 +37,7 @@ func (app *application) AuthTokenMiddleware(c *fiber.Ctx) error {
 		return app.unauthorizedError(c, err)
 	}
 
-	user, err := app.getUser(c.Context(), userID)
+	user, err := app.getUser(c.Context(), uint(userID))
 	if err != nil {
 		return app.unauthorizedError(c, err)
 	}
@@ -92,7 +92,7 @@ func (app *application) CheckPostOwnership( requiredRole string) fiber.Handler {
 		user := c.Locals("user").(*store.User)
 		post := c.Locals("post").(*store.Post)
 
-		if int64(post.UserID) == user.ID {
+		if post.UserID == user.ID {
 			return c.Next()
 		}
 
@@ -122,7 +122,7 @@ func (app *application) RateLimiterMiddleware(c *fiber.Ctx) error {
 	return c.Next()
 }
 
-func (app *application) getUser(ctx context.Context, id int64) (*store.User, error) {
+func (app *application) getUser(ctx context.Context, id uint) (*store.User, error) {
 	if !app.config.redisCfg.enabled {
 		return app.store.Users.GetByID(ctx, id)
 	}

@@ -10,11 +10,11 @@ import (
 	"github.com/pangdfg/gopher-social/internal/env"
 )
 
-func mount(app *fiber.App, c *application) {
-	app.Use(requestid.New())     
-	app.Use(recover.New())      
-	app.Use(logger.New())      
-	app.Use(cors.New(cors.Config{
+func mount(c *fiber.App, app *application) {
+	c.Use(requestid.New())     
+	c.Use(recover.New())      
+	c.Use(logger.New())      
+	c.Use(cors.New(cors.Config{
 		AllowOrigins:     env.GetString("CORS_ALLOWED_ORIGIN", "http://localhost:5174"),
 		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",
 		AllowHeaders:     "Accept,Authorization,Content-Type,X-CSRF-Token",
@@ -23,14 +23,29 @@ func mount(app *fiber.App, c *application) {
 		MaxAge:           300,
 	}))
 
-	if c.config.rateLimiter.Enabled {
-		app.Use(c.RateLimiterMiddleware)
+	if app.config.rateLimiter.Enabled {
+		c.Use(app.RateLimiterMiddleware)
 	}
 
-	v1 := app.Group("/v1")
-	v1.Get("/", func(c *fiber.Ctx) error {
-		return c.SendString("Welcome to Gopher Social API v1")
-	})
+	v1 := c.Group("/v1")
 
-	v1.Get("/health", c.healthCheckHandler)
+	v1.Get("/health", app.healthCheckHandler)
+	
+	users := v1.Group("/users")
+
+	users.Put("/activate/{token}", app.activateUserHandler)
+
+	users.Use(app.AuthTokenMiddleware)
+
+	user := users.Group(("/:userID"))
+
+	user.Get("/", app.getUserHandler)
+	user.Put("/follow", app.followUserHandler)
+	user.Put("/unfollow", app.unfollowUserHandler)
+
+	//users.Get("/feed", app.getUserFeedHandler)
+
+	auth := v1.Group("/auth")
+	auth.Post("/user", app.registerUserHandler)
+	auth.Post("/token", app.createTokenHandler)
 }

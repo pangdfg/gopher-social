@@ -37,7 +37,7 @@ func Seed(ctx context.Context, db *gorm.DB) {
 		return
 	}
 
-	comments := generateComments(20, users, posts)
+	comments := generateComments(20, posts)
 	if err := db.Create(&comments).Error; err != nil {
 		log.Println("Error creating comments:", err)
 		return
@@ -84,7 +84,7 @@ func generatePosts(num int, users []*store.User) []*store.Post {
 }
 
 
-func generateComments(num int, users []*store.User, posts []*store.Post) []*store.Comment {
+func generateComments(num int, posts []*store.Post) []*store.Comment {
 	cms := make([]*store.Comment, num)
 	for i := 0; i < num; i++ {
 		cms[i] = &store.Comment{

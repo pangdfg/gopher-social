@@ -25,7 +25,7 @@ func NewFollowerStore(db *gorm.DB) *FollowerStore {
 }
 
 // Follow creates a new follower record
-func (s *FollowerStore) Follow(ctx context.Context, followerID, userID uint) error {
+func (s *FollowerStore) Follow(ctx context.Context, followerID uint, userID uint) error {
 	f := Follower{
 		UserID:     userID,
 		FollowerID: followerID,
@@ -45,7 +45,7 @@ func (s *FollowerStore) Follow(ctx context.Context, followerID, userID uint) err
 }
 
 // Unfollow deletes a follower record
-func (s *FollowerStore) Unfollow(ctx context.Context, followerID, userID uint) error {
+func (s *FollowerStore) Unfollow(ctx context.Context, followerID uint, userID uint) error {
 	err := s.db.WithContext(ctx).
 		Where("user_id = ? AND follower_id = ?", userID, followerID).
 		Delete(&Follower{}).Error

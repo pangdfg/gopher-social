@@ -20,12 +20,12 @@ type Storage struct {
 		GetUserFeed(ctx context.Context, userID uint, search string, tags []string, limit, offset int, sort string) ([]Post, error)
 	}
 	Users interface {
-		GetByID(ctx context.Context, id int64) (*User, error)
+		GetByID(ctx context.Context, id uint) (*User, error)
 		GetByEmail(ctx context.Context, email string) (*User, error)
 		Create(ctx context.Context, u *User) error
 		Activate(ctx context.Context, token string) error
 		UpdateUsername(ctx context.Context, user *User) error
-		Delete(ctx context.Context, id int64) error
+		Delete(ctx context.Context, id uint) error
 	}
 	Comments interface {
 		Create(ctx context.Context, c *Comment) error
