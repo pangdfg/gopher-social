@@ -9,13 +9,12 @@ import (
 )
 
 func NewGorm(addr string, maxOpenConns, maxIdleConns int, maxIdleTime string, debug bool) (*gorm.DB, error) {
-	// Parse max idle time
+
 	duration, err := time.ParseDuration(maxIdleTime)
 	if err != nil {
 		return nil, err
 	}
 
-	// GORM config
 	gormConfig := &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Silent), // silent by default
 	}

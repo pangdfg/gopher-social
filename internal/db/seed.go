@@ -73,7 +73,7 @@ func generatePosts(num int, users []*store.User) []*store.Post {
 		randomWords := []string{gofakeit.Word(), gofakeit.Word()}
 
 		posts[i] = &store.Post{
-			UserID:  user.ID,
+			UserID:  uint(user.ID),
 			Title:   gofakeit.Sentence(5),
 			Content: gofakeit.Paragraph(1, 3, 10, " "),
 			Tags:    convertToTags(randomWords),
@@ -88,8 +88,8 @@ func generateComments(num int, users []*store.User, posts []*store.Post) []*stor
 	cms := make([]*store.Comment, num)
 	for i := 0; i < num; i++ {
 		cms[i] = &store.Comment{
-			PostID:  posts[rand.Intn(len(posts))].ID,
-			UserID:  users[rand.Intn(len(users))].ID,
+			PostID:  uint(posts[rand.Intn(len(posts))].ID),
+			UserID:  uint(posts[rand.Intn(len(posts))].ID),
 			Content: gofakeit.Sentence(8),
 		}
 	}

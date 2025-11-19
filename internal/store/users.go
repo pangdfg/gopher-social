@@ -17,7 +17,7 @@ var (
 
 // User model
 type User struct {
-	ID        uint      `gorm:"primaryKey" json:"id"`
+	ID        int64      `gorm:"primaryKey" json:"id"`
 	Email     string    `gorm:"uniqueIndex;size:255" json:"email"`
 	Username  string    `gorm:"uniqueIndex;size:255" json:"username"`
 	Password  password  `gorm:"-" json:"-"`

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-playground/validator"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
@@ -25,31 +24,12 @@ type UserWithToken struct {
 	Token string `json:"token"`
 }
 
-var Validate = validator.New()
-
-// registerUserHandler godoc
-//
-//	@Summary		Registers a user
-//	@Description	Registers a user
-//	@Tags			authentication
-//	@Accept			json
-//	@Produce		json
-//	@Param			payload	body		RegisterUserPayload	true	"User credentials"
-//	@Success		201		{object}	UserWithToken		"User registered"
-//	@Failure		400		{object}	error
-//	@Failure		500		{object}	error
-//	@Router			/authentication/user [post]
 
 func (app *application) registerUserHandlerFiber(c *fiber.Ctx) error {
 	var payload RegisterUserPayload
 
 	// Parse JSON
 	if err := c.BodyParser(&payload); err != nil {
-		return app.badRequestResponse(c, err)
-	}
-
-	// Validate
-	if err := Validate.Struct(payload); err != nil {
 		return app.badRequestResponse(c, err)
 	}
 
@@ -61,34 +41,20 @@ func (app *application) registerUserHandlerFiber(c *fiber.Ctx) error {
 		},
 	}
 
-	// Hash password
 	if err := user.Password.Set(payload.Password); err != nil {
 		return app.internalServerError(c, err)
 	}
 
-	ctx := c.Context() // fiber -> fasthttp ctx
+	ctx := c.Context()
 
-	// Generate activation token
 	plainToken := uuid.New().String()
 	hash := sha256.Sum256([]byte(plainToken))
 	hashToken := hex.EncodeToString(hash[:])
 
-	// Store user + activation token
-	err := app.store.Users.CreateAndInvite(ctx, user, hashToken, app.config.mail.exp)
-	if err != nil {
-		switch err {
-		case store.ErrDuplicateEmail:
-			return app.badRequestResponse(c, err)
-		case store.ErrDuplicateUsername:
-			return app.badRequestResponse(c, err)
-		default:
-			return app.internalServerError(c, err)
-		}
-	}
 
 	userWithToken := UserWithToken{
 		User:  user,
-		Token: plainToken,
+		Token: hashToken,
 	}
 
 	activationURL := fmt.Sprintf("%s/confirm/%s", app.config.frontendURL, plainToken)
@@ -103,7 +69,6 @@ func (app *application) registerUserHandlerFiber(c *fiber.Ctx) error {
 		ActivationURL: activationURL,
 	}
 
-	// Send email
 	status, err := app.mailer.Send(mailer.UserWelcomeTemplate, user.Username, user.Email, mailVars, !isProdEnv)
 	if err != nil {
 		app.logger.Errorw("error sending welcome email", "error", err)
@@ -125,29 +90,11 @@ type CreateUserTokenPayload struct {
 	Password string `json:"password" validate:"required,min=3,max=72"`
 }
 
-// createTokenHandler godoc
-//
-//	@Summary		Creates a token
-//	@Description	Creates a token for a user
-//	@Tags			authentication
-//	@Accept			json
-//	@Produce		json
-//	@Param			payload	body		CreateUserTokenPayload	true	"User credentials"
-//	@Success		200		{string}	string					"Token"
-//	@Failure		400		{object}	error
-//	@Failure		401		{object}	error
-//	@Failure		500		{object}	error
-//	@Router			/authentication/token [post]
 func (app *application) createTokenHandler(c *fiber.Ctx) error {
 	var payload CreateUserTokenPayload
 
 	// Parse request
 	if err := c.BodyParser(&payload); err != nil {
-		return app.badRequestResponse(c, err)
-	}
-
-	// Validate
-	if err := Validate.Struct(payload); err != nil {
 		return app.badRequestResponse(c, err)
 	}
 

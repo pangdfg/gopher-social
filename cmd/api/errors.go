@@ -64,7 +64,7 @@ func (app *application) notFoundResponse(c *fiber.Ctx, err error) error {
 	})
 }
 
-func (app *application) unauthorizedErrorResponse(c *fiber.Ctx, err error) error {
+func (app *application) unauthorizedError(c *fiber.Ctx, err error) error {
 	app.logger.Warnw("unauthorized error",
 		"method", c.Method(),
 		"path", c.Path(),
@@ -76,7 +76,7 @@ func (app *application) unauthorizedErrorResponse(c *fiber.Ctx, err error) error
 	})
 }
 
-func (app *application) unauthorizedBasicErrorResponse(c *fiber.Ctx, err error) error {
+func (app *application) unauthorizedErrorResponse(c *fiber.Ctx, err error) error {
 	app.logger.Warnw("unauthorized basic error",
 		"method", c.Method(),
 		"path", c.Path(),
