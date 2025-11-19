@@ -11,6 +11,8 @@ import (
 )
 
 func mount(c *fiber.App, app *application) {
+
+	//Middlewares
 	c.Use(requestid.New())     
 	c.Use(recover.New())      
 	c.Use(logger.New())      
@@ -27,10 +29,13 @@ func mount(c *fiber.App, app *application) {
 		c.Use(app.RateLimiterMiddleware)
 	}
 
+	//API v1 routes
 	v1 := c.Group("/v1")
 
+	//Ops routes
 	v1.Get("/health", app.healthCheckHandler)
 	
+	//Users routes
 	users := v1.Group("/users")
 
 	users.Put("/activate/{token}", app.activateUserHandler)
@@ -43,9 +48,22 @@ func mount(c *fiber.App, app *application) {
 	user.Put("/follow", app.followUserHandler)
 	user.Put("/unfollow", app.unfollowUserHandler)
 
-	//users.Get("/feed", app.getUserFeedHandler)
+	users.Get("/feed", app.getUserFeedHandler)
 
+	//Auth routes
 	auth := v1.Group("/auth")
 	auth.Post("/user", app.registerUserHandler)
 	auth.Post("/token", app.createTokenHandler)
+
+	//Posts routes
+	posts := v1.Group("/posts", app.AuthTokenMiddleware)
+
+	posts.Post("/", app.createPostHandler)
+
+	post := posts.Group("/:postID", app.postsContextMiddleware)
+
+	post.Get("/", app.getPostHandler)
+	
+	post.Patch("/", app.checkPostOwnership("moderator"),  app.updatePostHandler)
+	post.Delete("/", app.checkPostOwnership("admin"), app.deletePostHandler)
 }

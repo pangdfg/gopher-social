@@ -40,7 +40,6 @@ type Storage struct {
 	}
 }
 
-// NewStorage returns a GORM-based Storage
 func NewStorage(db *gorm.DB) Storage {
 	return Storage{
 		Posts:     &PostStore{db: db},

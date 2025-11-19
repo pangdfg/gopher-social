@@ -87,7 +87,7 @@ func (app *application) checkRolePrecedence(c *fiber.Ctx, user *store.User, role
 	return user.Role.Level <= role.Level, nil
 }
 
-func (app *application) CheckPostOwnership( requiredRole string) fiber.Handler {
+func (app *application) checkPostOwnership( requiredRole string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		user := c.Locals("user").(*store.User)
 		post := c.Locals("post").(*store.Post)
