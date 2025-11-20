@@ -10,8 +10,6 @@ services:
       POSTGRES_PASSWORD: adminpassword
     networks:
       - backend 
-    volumes:
-      - db-data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
 
@@ -35,9 +33,6 @@ services:
       - redis
     restart:
       unless-stopped
-  
-volumes:
-  db-data:
 
 networks:
   backend:

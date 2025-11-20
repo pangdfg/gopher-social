@@ -1,6 +1,7 @@
 package store
 
 import (
+	"github.com/gofiber/fiber/v2"
 	"net/http"
 	"strconv"
 	"strings"
@@ -17,6 +18,9 @@ type PaginatedFeedQuery struct {
 	Until  string   `json:"until"`
 }
 
+func (fq PaginatedFeedQuery) ParseFiber(c *fiber.Ctx) (PaginatedFeedQuery, error) {
+	panic("unimplemented")
+}
 
 func (fq PaginatedFeedQuery) Parse(r *http.Request) (PaginatedFeedQuery, error) {
 	qs := r.URL.Query()

@@ -11,6 +11,11 @@ import (
 type postKey string
 
 const postCtx postKey = "post"
+ 
+type CreateCommentPayload struct {
+	PostID  uint   `json:"post_id" validate:"required"`
+	Content string `json:"content" validate:"required,max=500"`
+}
 
 type CreatePostPayload struct {
 	Title   string   `json:"title" validate:"required,max=100"`
@@ -133,6 +138,29 @@ func (app *application) postsContextMiddleware(c *fiber.Ctx) error {
 	c.Locals("post", post)
 
 	return c.Next()
+}
+
+func (app *application) createCommentHandler(c *fiber.Ctx) error {
+	var payload CreateCommentPayload
+	if err := c.BodyParser(&payload); err != nil {
+		return app.badRequestResponse(c, err)
+	}
+
+	user := c.Locals("user").(*store.User)
+	comment := &store.Comment{
+		PostID:  payload.PostID,
+		Content: payload.Content,
+		UserID:  user.ID,
+	}
+
+	ctx := c.Context()
+	if err := app.store.Comments.Create(ctx, comment); err != nil {
+		return app.internalServerError(c, err)
+	}	
+	
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
+		"data": comment,
+	})
 }
 
 

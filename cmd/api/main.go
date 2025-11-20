@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"os"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -109,6 +110,16 @@ func main() {
 		logger:        logger,
 		authenticator: jwtAuthenticator,
 		rateLimiter:   rateLimiter,
+	}
+	
+	if len(os.Args) > 1 && os.Args[1] == "migrate" {
+		action := os.Args[2]
+		versionDB := ""
+		if action == "force" && len(os.Args) > 3 {
+			versionDB = os.Args[3]
+		}
+		RunMigrations(c, versionDB, action)
+		return
 	}
 	
 	app := fiber.New(fiber.Config{

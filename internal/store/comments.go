@@ -41,7 +41,7 @@ func (s *CommentStore) GetByPostID(ctx context.Context, postID uint) ([]Comment,
 	return comments, nil
 }
 
-// Create a new comment
+
 func (s *CommentStore) Create(ctx context.Context, comment *Comment) error {
-	return s.db.Create(comment).Error
+    return s.db.WithContext(ctx).Create(comment).Error
 }
