@@ -7,8 +7,11 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/fiber/v2/middleware/requestid"
 
+	swagger "github.com/arsmn/fiber-swagger/v2"
+	_ "github.com/pangdfg/gopher-social/doc"
 	"github.com/pangdfg/gopher-social/internal/env"
 )
+
 
 func mount(c *fiber.App, app *application) {
 
@@ -34,7 +37,10 @@ func mount(c *fiber.App, app *application) {
 
 	//Ops routes
 	v1.Get("/health", app.healthCheckHandler)
-	
+
+	//Swagger docs
+	v1.Get("/swagger/*", swagger.New())
+
 	//Users routes
 	users := v1.Group("/users")
 
