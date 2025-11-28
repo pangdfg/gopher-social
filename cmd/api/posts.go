@@ -31,6 +31,20 @@ func convertToStoreTags(tags []string) []store.Tag {
 	return storeTags
 }
 
+// CreatePost godoc
+//
+//	@Summary		Creates a post
+//	@Description	Creates a post
+//	@Tags			posts
+//	@Accept			json
+//	@Produce		json
+//	@Param			payload	body		CreatePostPayload	true	"Post payload"
+//	@Success		201		{object}	store.Post
+//	@Failure		400		{object}	error
+//	@Failure		401		{object}	error
+//	@Failure		500		{object}	error
+//	@Security		ApiKeyAuth
+//	@Router			/posts [post]
 func (app *application) createPostHandler(c *fiber.Ctx) error {
 	var payload CreatePostPayload
 	if err := c.BodyParser(&payload); err != nil {
@@ -55,6 +69,19 @@ func (app *application) createPostHandler(c *fiber.Ctx) error {
 	})
 }
 
+// GetPost godoc
+//
+//	@Summary		Fetches a post
+//	@Description	Fetches a post by ID
+//	@Tags			posts
+//	@Accept			json
+//	@Produce		json
+//	@Param			id	path		int	true	"Post ID"
+//	@Success		200	{object}	store.Post
+//	@Failure		404	{object}	error
+//	@Failure		500	{object}	error
+//	@Security		ApiKeyAuth
+//	@Router			/posts/{id} [get]
 func (app *application) getPostHandler(c *fiber.Ctx) error {
 	post := c.Locals("post").(*store.Post)
 
@@ -68,6 +95,19 @@ func (app *application) getPostHandler(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(post)
 }
 
+// DeletePost godoc
+//
+//	@Summary		Deletes a post
+//	@Description	Delete a post by ID
+//	@Tags			posts
+//	@Accept			json
+//	@Produce		json
+//	@Param			id	path		int	true	"Post ID"
+//	@Success		204	{object} string
+//	@Failure		404	{object}	error
+//	@Failure		500	{object}	error
+//	@Security		ApiKeyAuth
+//	@Router			/posts/{id} [delete]
 func (app *application) deletePostHandler(c *fiber.Ctx) error {
 	idParam := c.Params("postID")
 	id, err := strconv.ParseInt(idParam, 10, 64)
@@ -87,6 +127,22 @@ func (app *application) deletePostHandler(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusNoContent)
 }
 
+// UpdatePost godoc
+//
+//	@Summary		Updates a post
+//	@Description	Updates a post by ID
+//	@Tags			posts
+//	@Accept			json
+//	@Produce		json
+//	@Param			id		path		int					true	"Post ID"
+//	@Param			payload	body		UpdatePostPayload	true	"Post payload"
+//	@Success		200		{object}	store.Post
+//	@Failure		400		{object}	error
+//	@Failure		401		{object}	error
+//	@Failure		404		{object}	error
+//	@Failure		500		{object}	error
+//	@Security		ApiKeyAuth
+//	@Router			/posts/{id} [patch]
 type UpdatePostPayload struct {
 	Title   *string `json:"title" validate:"omitempty,max=100"`
 	Content *string `json:"content" validate:"omitempty,max=1000"`
@@ -140,6 +196,20 @@ func (app *application) postsContextMiddleware(c *fiber.Ctx) error {
 	return c.Next()
 }
 
+// CreateComment godoc
+//
+//	@Summary		Creates a comment
+//	@Description	Creates a comment
+//	@Tags			comments
+//	@Accept			json
+//	@Produce		json
+//	@Param			payload	body		CreateCommentPayload	true	"Post payload"
+//	@Success		201		{object}	store.Comment
+//	@Failure		400		{object}	error
+//	@Failure		401		{object}	error
+//	@Failure		500		{object}	error
+//	@Security		ApiKeyAuth
+//	@Router			/posts/{id} [post]
 func (app *application) createCommentHandler(c *fiber.Ctx) error {
 	var payload CreateCommentPayload
 	if err := c.BodyParser(&payload); err != nil {
