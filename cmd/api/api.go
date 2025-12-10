@@ -48,7 +48,7 @@ func mount(c *fiber.App, app *application) {
 
 	users.Use(app.AuthTokenMiddleware)
 
-	user := users.Group(("/:userID"))
+	user := users.Group("/:userID")
 
 	user.Get("/", app.getUserHandler)
 	user.Put("/follow", app.followUserHandler)

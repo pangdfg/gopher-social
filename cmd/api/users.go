@@ -28,7 +28,7 @@ const userCtx userKey = "user"
 //	@Router			/users/{id} [get]
 func (app *application) getUserHandler(c *fiber.Ctx) error {
 	userID, err := strconv.ParseInt(c.Params("userID"), 10, 64)
-	if err != nil {
+	if err != nil || userID < 1 {
 		return app.badRequestResponse(c, err)
 	}
 
