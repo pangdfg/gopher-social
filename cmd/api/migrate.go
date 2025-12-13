@@ -27,8 +27,12 @@ func CreateMigration(name string) error {
 	up := filepath.Join(dir, fmt.Sprintf("%d_%s.up.sql", timestamp, name))
 	down := filepath.Join(dir, fmt.Sprintf("%d_%s.down.sql", timestamp, name))
 
-	os.WriteFile(up, []byte("-- write your UP migration here\n"), 0644)
-	os.WriteFile(down, []byte("-- write your DOWN migration here\n"), 0644)
+	if err := os.WriteFile(up, []byte("-- write your UP migration here\n"), 0644); err != nil {
+		return err
+	}
+	if err := os.WriteFile(down, []byte("-- write your DOWN migration here\n"), 0644); err != nil {
+		return err
+	}
 
 	fmt.Println("Created:")
 	fmt.Println("  ", up)
@@ -45,17 +49,25 @@ func RunMigrations(app *application, versionArg string, action string) {
 	if err != nil {
 		log.Fatal("DB pool create error: ", err)
 	}
+	
+	if err := db.Ping(); err != nil {
+		log.Fatal("DB connection error:", err)
+	}
+
+	defer db.Close()
 
 	driver, err := postgres.WithInstance(db, &postgres.Config{})
 	if err != nil {
 		log.Fatal("Migration driver error:", err)
 	}
 
-	m, err := migrate.NewWithDatabaseInstance(
-		"file://cmd/migrate/migrations",
+	migrationsDir, _ := filepath.Abs("cmd/migrate/migrations")
+		m, err := migrate.NewWithDatabaseInstance(
+		"file://" + migrationsDir,
 		"postgres",
 		driver,
 	)
+
 	if err != nil {
 		log.Fatal("Migration instance error:", err)
 	}	
