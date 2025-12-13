@@ -17,7 +17,7 @@ type Storage struct {
 		Create(ctx context.Context, post *Post) error
 		Delete(ctx context.Context, id uint) error
 		Update(ctx context.Context, post *Post) error
-		GetUserFeed(ctx context.Context, userID uint, search string, tags []string, limit, offset int, sort string) ([]Post, error)
+		GetUserFeed(ctx context.Context, userID uint, fq PaginatedFeedQuery) ([]Post, error)
 	}
 	Users interface {
 		GetByID(ctx context.Context, id uint) (*User, error)

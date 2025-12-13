@@ -41,13 +41,13 @@ func NewPostStore(db *gorm.DB) *PostStore {
 
 
 func (s *PostStore) Create(ctx context.Context, post *Post) error {
-	return s.db.Create(post).Error
+	return s.db.WithContext(ctx).Create(post).Error
 }
 
 
 func (s *PostStore) GetByID(ctx context.Context, id uint) (*Post, error) {
 	post := &Post{}
-	err := s.db.Preload("User").Preload("Tags").Preload("Comments").First(post, id).Error
+	err := s.db.WithContext(ctx).Preload("User").Preload("Tags").Preload("Comments").First(post, id).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, ErrNotFound
@@ -59,7 +59,7 @@ func (s *PostStore) GetByID(ctx context.Context, id uint) (*Post, error) {
 
 
 func (s *PostStore) Update(ctx context.Context,post *Post) error {
-	tx := s.db.Model(&Post{}).
+	tx := s.db.WithContext(ctx).Model(&Post{}).
 		Where("id = ? AND version = ?", post.ID, post.Version).
 		Updates(map[string]interface{}{
 			"title":   post.Title,
@@ -80,7 +80,7 @@ func (s *PostStore) Update(ctx context.Context,post *Post) error {
 
 // Delete a post
 func (s *PostStore) Delete(ctx context.Context, postID uint) error {
-	tx := s.db.Delete(&Post{}, postID)
+	tx := s.db.WithContext(ctx).Delete(&Post{}, postID)
 	if tx.Error != nil {
 		return tx.Error
 	}
@@ -90,25 +90,43 @@ func (s *PostStore) Delete(ctx context.Context, postID uint) error {
 	return nil
 }
 
-func (s *PostStore) GetUserFeed(ctx context.Context, userID uint, search string, tags []string, limit, offset int, sort string) ([]Post, error) {
+func (s *PostStore) GetUserFeed(ctx context.Context, userID uint, fq PaginatedFeedQuery) ([]Post, error) {
 	var posts []Post
-	query := s.db.Preload("User").Preload("Tags").Preload("Comments")
+	
+	query := s.db.WithContext(ctx).
+		Preload("User").
+		Preload("Tags").
+		Preload("Comments")
 
-	if search != "" {
-		query = query.Where("title ILIKE ? OR content ILIKE ?", "%"+search+"%", "%"+search+"%")
+	if fq.Search != "" {
+		query = query.Where("title ILIKE ? OR content ILIKE ?", "%"+fq.Search+"%", "%"+fq.Search+"%")
 	}
 
-	if len(tags) > 0 {
+	if len(fq.Tags) > 0 {
 		query = query.Joins("JOIN post_tags pt ON pt.post_id = posts.id").
 			Joins("JOIN tags t ON t.id = pt.tag_id").
-			Where("t.name IN ?", tags)
+			Where("t.name IN ?", fq.Tags).
+			Distinct("posts.id") // Ensure we don't get duplicate posts if multiple tags match
 	}
 
-	if sort != "asc" && sort != "desc" {
-		sort = "desc"
+	if fq.Since != "" {
+		query = query.Where("created_at >= ?", fq.Since)
+	}
+	if fq.Until != "" {
+		query = query.Where("created_at <= ?", fq.Until)
 	}
 
-	err := query.Order("created_at " + sort).Limit(limit).Offset(offset).Find(&posts).Error
+	if fq.Sort == "" {
+		fq.Sort = "desc"
+	}
+
+	query = query.Order("posts.created_at " + fq.Sort)
+
+	err := query.
+		Limit(fq.Limit).
+		Offset(fq.Offset).
+		Find(&posts).Error
+
 	if err != nil {
 		return nil, err
 	}

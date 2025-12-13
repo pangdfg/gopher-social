@@ -7,10 +7,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/pangdfg/gopher-social/internal/store"
 )
-
-type postKey string
-
-const postCtx postKey = "post"
  
 type CreateCommentPayload struct {
 	PostID  uint   `json:"post_id" validate:"required"`
@@ -215,7 +211,7 @@ func (app *application) createCommentHandler(c *fiber.Ctx) error {
 	if err := c.BodyParser(&payload); err != nil {
 		return app.badRequestResponse(c, err)
 	}
-
+	
 	user := c.Locals("user").(*store.User)
 	comment := &store.Comment{
 		PostID:  payload.PostID,

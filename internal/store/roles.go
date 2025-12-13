@@ -27,7 +27,7 @@ func (s *RoleStore) GetByName(ctx context.Context, name string) (*Role, error) {
 	role := &Role{}
 	if err := s.db.Where("name = ?", name).First(role).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			return nil, nil // or return a custom ErrNotFound
+			return nil, nil 
 		}
 		return nil, err
 	}

@@ -1,11 +1,11 @@
 package store
 
 import (
-	"github.com/gofiber/fiber/v2"
-	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/gofiber/fiber/v2"
 )
 
 type PaginatedFeedQuery struct {
@@ -18,38 +18,45 @@ type PaginatedFeedQuery struct {
 	Until  string   `json:"until"`
 }
 
-func (fq PaginatedFeedQuery) ParseFiber(c *fiber.Ctx) (PaginatedFeedQuery, error) {
-	panic("unimplemented")
-}
+func (fq PaginatedFeedQuery) Parse(c *fiber.Ctx) (PaginatedFeedQuery, error) {
 
-func (fq PaginatedFeedQuery) Parse(r *http.Request) (PaginatedFeedQuery, error) {
-	qs := r.URL.Query()
-
-	if limit := qs.Get("limit"); limit != "" {
+	if limit := c.Query("limit"); limit != "" {
 		if l, err := strconv.Atoi(limit); err == nil {
 			fq.Limit = l
 		}
 	}
-	if offset := qs.Get("offset"); offset != "" {
+
+	if offset := c.Query("offset"); offset != "" {
 		if o, err := strconv.Atoi(offset); err == nil {
 			fq.Offset = o
 		}
 	}
-	if sort := qs.Get("sort"); sort != "" {
+
+	// Sort
+	if sort := c.Query("sort"); sort != "" {
 		fq.Sort = sort
 	}
-	if tags := qs.Get("tags"); tags != "" {
+
+	// Tags
+	if tags := c.Query("tags"); tags != "" {
 		fq.Tags = strings.Split(tags, ",")
 	}
-	if search := qs.Get("search"); search != "" {
+
+	// Search
+	if search := c.Query("search"); search != "" {
 		fq.Search = search
 	}
-	if since := qs.Get("since"); since != "" {
+
+	// Since
+	if since := c.Query("since"); since != "" {
 		fq.Since = parseTime(since)
 	}
-	if until := qs.Get("until"); until != "" {
+
+	// Until
+	if until := c.Query("until"); until != "" {
 		fq.Until = parseTime(until)
 	}
+
 	return fq, nil
 }
 

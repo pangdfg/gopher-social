@@ -46,7 +46,7 @@ func (app *application) getUserFeedHandler(c *fiber.Ctx) error {
 	}
 
 	var err error
-	fq, err = fq.ParseFiber(c) 
+	fq, err = fq.Parse(c) 
 	if err != nil {
 		return app.badRequestResponse(c, err)
 	}
@@ -57,7 +57,7 @@ func (app *application) getUserFeedHandler(c *fiber.Ctx) error {
 
 	user := c.Locals("user").(*store.User)
 
-	feed, err := app.store.Posts.GetUserFeed(c.Context(), user.ID, fq.Search, fq.Tags, fq.Limit, fq.Offset, fq.Sort)
+	feed, err := app.store.Posts.GetUserFeed(c.Context(), user.ID, fq)
 	if err != nil {
 		return app.internalServerError(c, err)
 	}
