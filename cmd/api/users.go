@@ -156,7 +156,51 @@ func (app *application) activateUserHandler(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusNoContent)
 }
 
+type UpdateUsername struct {
+	Username string `json:"username" validate:"required,max=100"`
+}
 
+// UpdateUsernameHandler godoc
+//
+//	@Summary		Update authenticated user's username
+//	@Description	Allows an authenticated user to change their username
+//	@Tags			users
+//	@Accept			json
+//	@Produce		json
+//	@Param			payload	body		UpdateUsername	true	"Username payload"
+//	@Success		200		{object}	store.User
+//	@Failure		400		{object}	error	"Bad request / invalid payload"
+//	@Failure		401		{object}	error	"Unauthorized"
+//	@Failure		409		{object}	error	"Username already exists"
+//	@Failure		500		{object}	error	"Internal server error"
+//	@Security		ApiKeyAuth
+//	@Router			/users/username [patch]
+func (app *application) updateUsernameHandler(c *fiber.Ctx) error {
+	authUser := getUserFromContext(c)
+
+	var payload UpdateUsername
+
+	if err := c.BodyParser(&payload); err != nil {
+		return app.badRequestResponse(c, err)
+	}
+	authUser.Username = payload.Username
+
+	if err := app.store.Users.UpdateUsername(c.Context(), authUser); err != nil {
+	switch err{
+	case store.ErrConflict:
+		return app.conflictResponse(c, err)
+	default:
+		return app.internalServerError(c, err)
+		}
+	}
+
+	updatedUser, err := app.store.Users.GetByID(c.Context(), authUser.ID)
+	if err != nil {
+		return app.internalServerError(c, err)
+	}
+
+	return c.Status(fiber.StatusOK).JSON(updatedUser)
+}
 
 func getUserFromContext(c *fiber.Ctx) *store.User {
 	user, ok := c.Locals("user").(*store.User)

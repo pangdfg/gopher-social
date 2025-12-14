@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/pangdfg/gopher-social/internal/store"
@@ -36,7 +37,7 @@ func (s *UserStore) Set(ctx context.Context, user *store.User) error {
     if err != nil {
         return err
     }
-    return s.rdb.Set(ctx, cacheKey, b, 0).Err()
+    return s.rdb.Set(ctx, cacheKey, b, time.Minute*15).Err()
 }
 
 func (s *UserStore) Delete(ctx context.Context, userID uint) {

@@ -195,3 +195,61 @@ func (app *application) createTokenHandler(c *fiber.Ctx) error {
 
 	return c.Status(fiber.StatusCreated).JSON(token)
 }
+
+type Password struct {
+	Password string `json:"password" validate:"required,min=3,max=72"`
+}
+
+// ChangePasswordHandler godoc
+//
+//	@Summary		Change user password
+//	@Description	Allows an authenticated user to change their password
+//	@Tags			users
+//	@Accept			json
+//	@Produce		json
+//	@Param			payload	body		Password	true	"Password payload"
+//	@Success		200		{object}	store.User
+//	@Failure		400		{object}	error	"Bad request / invalid payload"
+//	@Failure		401		{object}	error	"Unauthorized / current password invalid"
+//	@Failure		500		{object}	error	"Internal server error"
+//	@Security		ApiKeyAuth
+//	@Router			/users/change-password [post]
+func (app *application) ChangePasswordHandler(c *fiber.Ctx) error {
+	authUser := getUserFromContext(c)
+
+	var payload Password
+
+	if err := c.BodyParser(&payload); err != nil {
+		return app.badRequestResponse(c, err)
+	}
+
+	user, err := app.store.Users.GetByEmail(c.Context(), authUser.Email)
+	if err != nil {
+		switch err {
+		case store.ErrNotFound:
+			return app.unauthorizedErrorResponse(c, err)
+		default:
+			return app.internalServerError(c, err)
+		}
+	}
+	if err := user.Authenticate(payload.Password); err != nil {
+		return app.unauthorizedErrorResponse(c, err)
+	}
+
+	if err := app.store.Users.UpdatePassword(c.Context(), authUser, payload.Password); err != nil {
+	switch err{
+	case store.ErrConflict:
+		return app.conflictResponse(c, err)
+	default:
+		return app.internalServerError(c, err)
+		}
+	}
+
+	updatedUser, err := app.store.Users.GetByID(c.Context(), authUser.ID)
+	if err != nil {
+		return app.internalServerError(c, err)
+	}
+
+
+	return c.Status(fiber.StatusOK).JSON(updatedUser)
+}

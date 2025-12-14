@@ -131,13 +131,32 @@ func (s *UserStore) Delete(ctx context.Context, userID uint) error {
 func (s *UserStore) UpdateUsername(ctx context.Context, user *User) error {
 	tx := s.db.Model(&User{}).Where("id = ?", user.ID).Updates(map[string]interface{}{
 		"Username": user.Username,
-	}).First(user)
+	})
 	if tx.Error != nil {
 		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
 			return ErrNotFound
 		}
 		if errors.Is(tx.Error, gorm.ErrDuplicatedKey) {
 			return ErrDuplicateUsername
+		}
+		return tx.Error
+	}
+	return nil
+}
+
+func (s *UserStore) UpdatePassword(ctx context.Context, user *User, plain string) error {
+	var p password
+	if err := p.Set(plain); err != nil {
+		return err
+	}
+
+	tx := s.db.Model(&User{}).Where("id = ?", user.ID).Updates(map[string]interface{}{
+		"Password": p.hash,
+	})
+
+	if tx.Error != nil {
+		if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+			return ErrNotFound
 		}
 		return tx.Error
 	}

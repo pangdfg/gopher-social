@@ -50,12 +50,15 @@ func mount(c *fiber.App, app *application) {
 	users.Put("/activate/{token}", app.activateUserHandler)
 
 	users.Use(app.AuthTokenMiddleware)
+	users.Put("/update-username", app.updateUsernameHandler)
+	users.Put("/change-password", app.ChangePasswordHandler)
 	
 	user := users.Group("/:userID")
 
 	user.Get("/", app.getUserHandler)
 	user.Put("/follow", app.followUserHandler)
 	user.Put("/unfollow", app.unfollowUserHandler)
+	
 
 	//Auth routes
 	auth := v1.Group("/auth")

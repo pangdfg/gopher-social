@@ -25,6 +25,7 @@ type Storage struct {
 		Create(ctx context.Context, u *User, plain string) error
 		Activate(ctx context.Context, userID uint) error
 		UpdateUsername(ctx context.Context, user *User) error
+		UpdatePassword(ctx context.Context, user *User, plain string) error
 		Delete(ctx context.Context, id uint) error
 	}
 	Comments interface {
