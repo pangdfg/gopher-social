@@ -19,14 +19,6 @@ type CreatePostPayload struct {
 	Tags    []string `json:"tags"`
 }
 
-func convertToStoreTags(tags []string) []store.Tag {
-	storeTags := make([]store.Tag, len(tags))
-	for i, tag := range tags {
-		storeTags[i] = store.Tag{Name: tag}
-	}
-	return storeTags
-}
-
 // CreatePost godoc
 //
 //	@Summary		Creates a post
@@ -51,7 +43,7 @@ func (app *application) createPostHandler(c *fiber.Ctx) error {
 	post := &store.Post{
 		Title:   payload.Title,
 		Content: payload.Content,
-		Tags:    convertToStoreTags(payload.Tags),
+		Tags:    payload.Tags,
 		UserID:  user.ID,
 	}
 
@@ -61,7 +53,7 @@ func (app *application) createPostHandler(c *fiber.Ctx) error {
 	}	
 	
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
-		"data": post,
+		"data": payload,
 	})
 }
 
@@ -105,13 +97,18 @@ func (app *application) getPostHandler(c *fiber.Ctx) error {
 //	@Security		ApiKeyAuth
 //	@Router			/posts/{id} [delete]
 func (app *application) deletePostHandler(c *fiber.Ctx) error {
-	idParam := c.Params("postID")
-	id, err := strconv.ParseInt(idParam, 10, 64)
-	if err != nil {
-		return app.badRequestResponse(c, err)
+	post, ok := c.Locals("post").(*store.Post)
+	if !ok || post == nil {
+		return app.internalServerError(c, errors.New("post context missing"))
 	}
 
-	if err := app.store.Posts.Delete(c.Context(), uint(id)); err != nil {
+	authUser := getUserFromContext(c)
+	isOwner := post.UserID == authUser.ID
+	if !isOwner {
+		return app.forbiddenResponse(c)
+	}
+
+	if err := app.store.Posts.Delete(c.Context(), uint(post.ID)); err != nil {
 		switch {
 		case errors.Is(err, store.ErrNotFound):
 			return app.notFoundResponse(c, err)
@@ -145,7 +142,17 @@ type UpdatePostPayload struct {
 }
 
 func (app *application) updatePostHandler(c *fiber.Ctx) error {
-	post := c.Locals("post").(*store.Post)
+
+	post, ok := c.Locals("post").(*store.Post)
+	if !ok || post == nil {
+		return app.internalServerError(c, errors.New("post context missing"))
+	}
+
+	authUser := getUserFromContext(c)
+	isOwner := post.UserID == authUser.ID
+	if !isOwner {
+		return app.forbiddenResponse(c)
+	}
 
 	var payload UpdatePostPayload
 	if err := c.BodyParser(&payload); err != nil {
@@ -163,18 +170,27 @@ func (app *application) updatePostHandler(c *fiber.Ctx) error {
 		post.Title = *payload.Title
 	}
 
-	if err := app.updatePost(c, post); err != nil {
+	if err := app.store.Posts.Update(c.Context(), post); err != nil {
+	switch {
+	case errors.Is(err, store.ErrConflict):
+		return app.conflictResponse(c, err)
+	default:
+		return app.internalServerError(c, err)
+	}
+	}
+	updatedPost, err := app.store.Posts.GetByID(c.Context(), post.ID)
+	if err != nil {
 		return app.internalServerError(c, err)
 	}
 
-	return c.Status(fiber.StatusOK).JSON(post)
+	return c.Status(fiber.StatusOK).JSON(updatedPost)
 }
 
 func (app *application) postsContextMiddleware(c *fiber.Ctx) error {
 	idParam := c.Params("postID")
 	id, err := strconv.ParseInt(idParam, 10, 64)
 	if err != nil {
-		return app.internalServerError(c, err)
+		return app.badRequestResponse(c, err)
 	}
 
 	post, err := app.store.Posts.GetByID(c.Context(), uint(id))
@@ -212,11 +228,18 @@ func (app *application) createCommentHandler(c *fiber.Ctx) error {
 		return app.badRequestResponse(c, err)
 	}
 	
+	idParam := c.Params("postID")
+	id, err := strconv.ParseInt(idParam, 10, 64)
+	if err != nil {
+		return app.internalServerError(c, err)
+	}
+
 	user := c.Locals("user").(*store.User)
 	comment := &store.Comment{
-		PostID:  payload.PostID,
+		PostID:  uint(id),
 		Content: payload.Content,
 		UserID:  user.ID,
+		User: *user,
 	}
 
 	ctx := c.Context()
@@ -227,19 +250,4 @@ func (app *application) createCommentHandler(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
 		"data": comment,
 	})
-}
-
-
-func getPostFromCtx(c *fiber.Ctx) *store.Post {
-	post, _ := c.Locals("post").(*store.Post)
-	return post
-}
-
-func (app *application) updatePost(c *fiber.Ctx, post *store.Post) error {
-	if err := app.store.Posts.Update(c.Context(), post); err != nil {
-		return err
-	}
-
-	app.cacheStorage.Users.Delete(c.Context(), post.UserID)
-	return nil
 }

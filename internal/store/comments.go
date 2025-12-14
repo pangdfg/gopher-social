@@ -8,7 +8,7 @@ import (
 )
 
 type Comment struct {
-	ID        uint      `gorm:"primaryKey" json:"id"`
+	ID        uint      `gorm:"primaryKey;autoIncrement" json:"id"`
 	PostID    uint      `json:"post_id"`
 	Post      Post      `gorm:"foreignKey:PostID" json:"-"`
 	UserID    uint      `json:"user_id"`

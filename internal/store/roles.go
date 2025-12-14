@@ -7,7 +7,7 @@ import (
 )
 
 type Role struct {
-	ID          uint   `gorm:"primaryKey" json:"id"`
+	ID          uint   `gorm:"primaryKey;autoIncrement" json:"id"`
 	Name        string `gorm:"uniqueIndex" json:"name"`
 	Description string `json:"description"`
 	Level       int    `json:"level"`
@@ -24,12 +24,16 @@ func NewRoleStore(db *gorm.DB) *RoleStore {
 
 
 func (s *RoleStore) GetByName(ctx context.Context, name string) (*Role, error) {
-	role := &Role{}
-	if err := s.db.Where("name = ?", name).First(role).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return nil, nil 
-		}
+	var role Role
+	err := s.db.
+		WithContext(ctx).
+		Where("name = ?", name).
+		First(&role).
+		Error
+
+		if err != nil {
 		return nil, err
 	}
-	return role, nil
+
+	return &role, nil
 }

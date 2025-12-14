@@ -58,6 +58,7 @@ type basicConfig struct {
 }
 
 type mailConfig struct {
+	enabled bool
 	sendGrid  sendGridConfig
 	mailTrap  mailTrapConfig
 	fromEmail string

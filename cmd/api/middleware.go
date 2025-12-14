@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"strconv"
 	"strings"
@@ -46,36 +45,18 @@ func (app *application) AuthTokenMiddleware(c *fiber.Ctx) error {
 	return c.Next()
 }
 
+func (app *application) AuthActive(c *fiber.Ctx, token string)  (Email string, err error) {
 
-func (app *application) BasicAuthMiddleware(c *fiber.Ctx) error {
-	authHeader := c.Get("Authorization")
-	if authHeader == "" {
-		return app.unauthorizedError(c, fmt.Errorf("authorization header is missing"))
-	}
-
-	parts := strings.Split(authHeader, " ")
-	if len(parts) != 2 || parts[0] != "Basic" {
-		return app.unauthorizedError(c, fmt.Errorf("authorization header malformed"))
-	}
-
-	decoded, err := base64.StdEncoding.DecodeString(parts[1])
+	jwtToken, err := app.authenticator.ValidateToken(token)
 	if err != nil {
-		return app.unauthorizedError(c, err)
+		return "", app.unauthorizedError(c, err)
 	}
 
-	creds := strings.SplitN(string(decoded), ":", 2)
-	if len(creds) != 2 {
-		return app.unauthorizedError(c, fmt.Errorf("invalid format"))
-	}
+	claims := jwtToken.Claims.(jwt.MapClaims)
 
-	username := app.config.auth.basic.user
-	pass := app.config.auth.basic.pass
+	Email = claims["email"].(string)
 
-	if creds[0] != username || creds[1] != pass {
-		return app.unauthorizedError(c, fmt.Errorf("invalid credentials"))
-	}
-
-	return c.Next()
+	return Email, err
 }
 
 func (app *application) checkRolePrecedence(c *fiber.Ctx, user *store.User, roleName string) (bool, error) {

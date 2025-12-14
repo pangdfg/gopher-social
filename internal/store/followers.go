@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"errors"
-	"time"
 
 	"gorm.io/gorm"
 )
@@ -13,7 +12,6 @@ var ErrConflict = errors.New("already following")
 type Follower struct {
 	UserID     uint      `gorm:"primaryKey" json:"user_id"`
 	FollowerID uint      `gorm:"primaryKey" json:"follower_id"`
-	CreatedAt  time.Time `json:"created_at"`
 }
 
 type FollowerStore struct {
@@ -29,7 +27,6 @@ func (s *FollowerStore) Follow(ctx context.Context, followerID uint, userID uint
 	f := Follower{
 		UserID:     userID,
 		FollowerID: followerID,
-		CreatedAt:  time.Now(),
 	}
 
 	err := s.db.WithContext(ctx).Create(&f).Error

@@ -55,9 +55,7 @@ func (app *application) getUserFeedHandler(c *fiber.Ctx) error {
 		return app.badRequestResponse(c, err)
 	}
 
-	user := c.Locals("user").(*store.User)
-
-	feed, err := app.store.Posts.GetUserFeed(c.Context(), user.ID, fq)
+	feed, err := app.store.Posts.GetUserFeed(c.Context(), fq)
 	if err != nil {
 		return app.internalServerError(c, err)
 	}
@@ -65,7 +63,7 @@ func (app *application) getUserFeedHandler(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(feed)
 }
 
-func (fq PaginatedFeedQuery) ParseFiber(c *fiber.Ctx) (PaginatedFeedQuery, error) {
+func (fq PaginatedFeedQuery) Parse(c *fiber.Ctx) (PaginatedFeedQuery, error) {
 	if limit := c.Query("limit"); limit != "" {
 		l, err := strconv.Atoi(limit)
 		if err != nil {

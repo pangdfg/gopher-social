@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -22,7 +23,7 @@ func CreateMigration(name string) error {
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		os.MkdirAll(dir, 0755)
 	}
-
+	
 	timestamp := time.Now().Unix()
 	up := filepath.Join(dir, fmt.Sprintf("%d_%s.up.sql", timestamp, name))
 	down := filepath.Join(dir, fmt.Sprintf("%d_%s.down.sql", timestamp, name))
@@ -62,7 +63,8 @@ func RunMigrations(app *application, versionArg string, action string) {
 	}
 
 	migrationsDir, _ := filepath.Abs("cmd/migrate/migrations")
-		m, err := migrate.NewWithDatabaseInstance(
+	migrationsDir = strings.ReplaceAll(migrationsDir, "\\", "/")
+	m, err := migrate.NewWithDatabaseInstance(
 		"file://" + migrationsDir,
 		"postgres",
 		driver,

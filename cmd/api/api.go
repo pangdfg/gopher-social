@@ -41,20 +41,21 @@ func mount(c *fiber.App, app *application) {
 	//Swagger docs
 	v1.Get("/swagger/*", swagger.New())
 
+	//feed
+	v1.Get("/feed", app.getUserFeedHandler)
+
 	//Users routes
 	users := v1.Group("/users")
-
+	
 	users.Put("/activate/{token}", app.activateUserHandler)
 
 	users.Use(app.AuthTokenMiddleware)
-
+	
 	user := users.Group("/:userID")
 
 	user.Get("/", app.getUserHandler)
 	user.Put("/follow", app.followUserHandler)
 	user.Put("/unfollow", app.unfollowUserHandler)
-
-	users.Get("/feed", app.getUserFeedHandler)
 
 	//Auth routes
 	auth := v1.Group("/auth")
@@ -71,6 +72,6 @@ func mount(c *fiber.App, app *application) {
 	post.Get("/", app.getPostHandler)
 	
 	post.Post("/", app.createCommentHandler)
-	post.Patch("/", app.checkPostOwnership("moderator"),  app.updatePostHandler)
-	post.Delete("/", app.checkPostOwnership("admin"), app.deletePostHandler)
+	post.Patch("/",  app.updatePostHandler)
+	post.Delete("/", app.deletePostHandler)
 }

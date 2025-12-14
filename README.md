@@ -3,6 +3,7 @@
 
 ```go
 go run ./cmd/api   
+nodemon --exec go run ./cmd/api
 ```
 
 ```go

@@ -131,8 +131,19 @@ func (app *application) unfollowUserHandler(c *fiber.Ctx) error {
 //	@Router			/users/activate/{token} [put]
 func (app *application) activateUserHandler(c *fiber.Ctx) error {
 	token := c.Params("token")
+	Email, err := app.AuthActive(c, token)
 
-	err := app.store.Users.Activate(c.Context(), token)
+	gtUer, err := app.store.Users.GetByEmail(c.Context(),Email)
+		if err != nil {
+		switch err {
+		case store.ErrNotFound:
+			return app.notFoundResponse(c, err)
+		default:
+			return app.internalServerError(c, err)
+		}
+	}
+
+	err = app.store.Users.Activate(c.Context(), gtUer.ID)
 	if err != nil {
 		switch err {
 		case store.ErrNotFound:
@@ -148,6 +159,9 @@ func (app *application) activateUserHandler(c *fiber.Ctx) error {
 
 
 func getUserFromContext(c *fiber.Ctx) *store.User {
-	user, _ := c.Locals(userCtx).(*store.User)
+	user, ok := c.Locals("user").(*store.User)
+	if !ok || user == nil {
+		return &store.User{} 
+	}
 	return user
 }

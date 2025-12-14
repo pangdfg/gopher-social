@@ -59,24 +59,15 @@ func generateUsers(num int, role store.Role) []*store.User {
 }
 
 func generatePosts(num int, users []*store.User) []*store.Post {
-	convertToTags := func(words []string) []store.Tag {
-		tags := make([]store.Tag, len(words))
-		for i, word := range words {
-			tags[i] = store.Tag{Name: word}
-		}
-		return tags
-	}
 
 	posts := make([]*store.Post, num)
 	for i := 0; i < num; i++ {
 		user := users[rand.Intn(len(users))]
-		randomWords := []string{gofakeit.Word(), gofakeit.Word()}
 
 		posts[i] = &store.Post{
 			UserID:  uint(user.ID),
 			Title:   gofakeit.Sentence(5),
 			Content: gofakeit.Paragraph(1, 3, 10, " "),
-			Tags:    convertToTags(randomWords),
 		}
 	}
 

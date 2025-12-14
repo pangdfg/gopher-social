@@ -17,13 +17,13 @@ type Storage struct {
 		Create(ctx context.Context, post *Post) error
 		Delete(ctx context.Context, id uint) error
 		Update(ctx context.Context, post *Post) error
-		GetUserFeed(ctx context.Context, userID uint, fq PaginatedFeedQuery) ([]Post, error)
+		GetUserFeed(ctx context.Context, fq PaginatedFeedQuery) ([]Post, error)
 	}
 	Users interface {
 		GetByID(ctx context.Context, id uint) (*User, error)
 		GetByEmail(ctx context.Context, email string) (*User, error)
-		Create(ctx context.Context, u *User) error
-		Activate(ctx context.Context, token string) error
+		Create(ctx context.Context, u *User, plain string) error
+		Activate(ctx context.Context, userID uint) error
 		UpdateUsername(ctx context.Context, user *User) error
 		Delete(ctx context.Context, id uint) error
 	}
@@ -48,9 +48,4 @@ func NewStorage(db *gorm.DB) Storage {
 		Followers: &FollowerStore{db: db},
 		Roles:     &RoleStore{db: db},
 	}
-}
-
-// Optional helper for GORM transactions
-func withTx(db *gorm.DB, fn func(tx *gorm.DB) error) error {
-	return db.Transaction(fn)
 }

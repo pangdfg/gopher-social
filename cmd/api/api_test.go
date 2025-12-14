@@ -64,7 +64,7 @@ func (a *application_test) mount() *fiber.App {
 	return a.app
 }
 
-func newTestApplication(cfg config) *application_test {
+func TestApplication(cfg config) *application_test {
 	app := fiber.New()
 	inst := &application_test{
 		app:    app,
@@ -95,7 +95,7 @@ var _ = Describe("API Test", func() {
 			},
 		}
 
-		appInst = newTestApplication(cfg)
+		appInst = TestApplication(cfg)
 		mockIP = "192.168.1.1"
 	})
 
@@ -111,7 +111,7 @@ var _ = Describe("API Test", func() {
 			Expect(err).To(BeNil())
 
 			body, _ := io.ReadAll(resp.Body)
-			_ = body // ignore body
+			_ = body 
 
 			if i < limit {
 				Expect(resp.StatusCode).To(Equal(fiber.StatusOK))

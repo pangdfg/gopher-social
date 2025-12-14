@@ -4,26 +4,23 @@ import (
 	"context"
 	"time"
 
+	"github.com/lib/pq"
 	"gorm.io/gorm"
 )
 
 type Post struct {
-	ID        uint           `gorm:"primaryKey" json:"id"`
+	ID        uint           `gorm:"primaryKey;autoIncrement" json:"id"`
 	Title     string         `gorm:"size:255" json:"title"`
 	Content   string         `json:"content"`
 	UserID    uint           `json:"user_id"`
 	User      User           `gorm:"foreignKey:UserID" json:"user"`
-	Tags      []Tag          `gorm:"many2many:post_tags;" json:"tags"`
-	Comments  []Comment      `json:"comments"`
+	Tags      pq.StringArray `gorm:"type:varchar(100)[]" json:"tags"`
+	Comments  []Comment      `gorm:"foreignKey:PostID" json:"comments"`
 	Version   int            `gorm:"default:1" json:"version"`
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
 }
 
-type Tag struct {
-	ID   uint   `gorm:"primaryKey" json:"id"`
-	Name string `gorm:"uniqueIndex;size:50" json:"name"`
-}
 
 type PostWithMetadata struct {
 	Post
@@ -47,7 +44,11 @@ func (s *PostStore) Create(ctx context.Context, post *Post) error {
 
 func (s *PostStore) GetByID(ctx context.Context, id uint) (*Post, error) {
 	post := &Post{}
-	err := s.db.WithContext(ctx).Preload("User").Preload("Tags").Preload("Comments").First(post, id).Error
+	err := s.db.WithContext(ctx).
+				Preload("User").
+				Preload("Comments").
+				Preload("Comments.User").
+				First(post, id).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, ErrNotFound
@@ -65,16 +66,13 @@ func (s *PostStore) Update(ctx context.Context,post *Post) error {
 			"title":   post.Title,
 			"content": post.Content,
 			"version": post.Version + 1,
-		}).First(post)
+		})
 
 	if tx.Error != nil {
-		if tx.Error == gorm.ErrRecordNotFound {
-			return ErrNotFound
-		}
 		return tx.Error
 	}
 
-	post.Version += 1
+	post.Version++
 	return nil
 }
 
@@ -90,13 +88,13 @@ func (s *PostStore) Delete(ctx context.Context, postID uint) error {
 	return nil
 }
 
-func (s *PostStore) GetUserFeed(ctx context.Context, userID uint, fq PaginatedFeedQuery) ([]Post, error) {
+func (s *PostStore) GetUserFeed(ctx context.Context, fq PaginatedFeedQuery) ([]Post, error) {
 	var posts []Post
 	
 	query := s.db.WithContext(ctx).
 		Preload("User").
-		Preload("Tags").
-		Preload("Comments")
+		Preload("Comments").
+		Preload("Comments.User")
 
 	if fq.Search != "" {
 		query = query.Where("title ILIKE ? OR content ILIKE ?", "%"+fq.Search+"%", "%"+fq.Search+"%")

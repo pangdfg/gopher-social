@@ -17,14 +17,13 @@ var (
 
 // User model
 type User struct {
-	ID        uint      `gorm:"primaryKey" json:"id"`
+	ID        uint      `gorm:"primaryKey;autoIncrement" json:"id"`
 	Email     string    `gorm:"uniqueIndex;size:255" json:"email"`
 	Username  string    `gorm:"uniqueIndex;size:255" json:"username"`
-	Password  password  `gorm:"-" json:"-"`
-	PasswordHash string `gorm:"size:255" json:"-"`
+	Password []byte `gorm:"column:password;not null" json:"-"`
 	IsActive  bool      `gorm:"default:false" json:"is_active"`
-	RoleID    uint
-	Role      Role
+	RoleID    uint 
+	Role   	  Role    `gorm:"foreignKey:RoleID;references:ID"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
@@ -56,14 +55,24 @@ func NewUserStore(db *gorm.DB) *UserStore {
 	return &UserStore{db: db}
 }
 
+func (u *User) Authenticate(plain string) error {
+	p := password{
+		hash: []byte(u.Password),
+	}
+	return p.Compare(plain)
+}
 
-func (s *UserStore) Create(ctx context.Context,user *User) error {
-	if err := user.Password.Set(*user.Password.text); err != nil {
+
+
+func (s *UserStore) Create(ctx context.Context,user *User, plain string) error {
+	var p password
+	if err := p.Set(plain); err != nil {
 		return err
 	}
-		
-	user.PasswordHash = string(user.Password.hash)
-	if err := s.db.Create(user).Error; err != nil {
+
+	user.Password = p.hash
+
+	if err := s.db.WithContext(ctx).Create(user).Error; err != nil {
 		if errors.Is(err, gorm.ErrDuplicatedKey) {
 			return ErrDuplicateEmail
 		}
@@ -94,7 +103,7 @@ func (s *UserStore) GetByID(ctx context.Context, userID uint) (*User, error) {
 
 func (s *UserStore) GetByEmail(ctx context.Context, email string) (*User, error) {
 	user := &User{}
-	if err := s.db.Preload("Role").Where("email = ? AND is_active = ?", email, true).First(user).Error; err != nil {
+	if err := s.db.Preload("Role").Where("email = ?", email).First(user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrNotFound
 		}
@@ -104,7 +113,7 @@ func (s *UserStore) GetByEmail(ctx context.Context, email string) (*User, error)
 }
 
 
-func (s *UserStore) Activate(ctx context.Context, userID string) error {
+func (s *UserStore) Activate(ctx context.Context, userID uint) error {
 	return s.db.Model(&User{}).Where("id = ?", userID).Update("is_active", true).Error
 }
 
