@@ -40,7 +40,7 @@ func main() {
 		env: env.GetString("ENV", "development"),
 		mail: mailConfig{
 			enabled: env.GetBool("ENABLED_EMAIL", false),
-			exp:       time.Hour * 24 * 3, // 3 days
+			exp:       time.Hour * 24 * 3,
 			fromEmail: env.GetString("FROM_EMAIL", ""),
 			sendGrid: sendGridConfig{
 				apiKey: env.GetString("SENDGRID_API_KEY", ""),

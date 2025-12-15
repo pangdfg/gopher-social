@@ -30,7 +30,6 @@ func (m *SendGridMailer) Send(templateFile, username, email string, data any, is
 	from := mail.NewEmail(FromName, m.fromEmail)
 	to := mail.NewEmail(username, email)
 
-	// template parsing and building
 	tmpl, err := template.ParseFS(FS, "templates/"+templateFile)
 	if err != nil {
 		return -1, err
@@ -60,7 +59,6 @@ func (m *SendGridMailer) Send(templateFile, username, email string, data any, is
 	for i := 0; i < maxRetires; i++ {
 		response, retryErr := m.client.Send(message)
 		if retryErr != nil {
-			// exponential backoff
 			time.Sleep(time.Second * time.Duration(i+1))
 			continue
 		}
