@@ -56,8 +56,8 @@ func mount(c *fiber.App, app *application) {
 	user := users.Group("/:userID")
 
 	user.Get("/", app.getUserHandler)
-	user.Put("/follow", app.followUserHandler)
-	user.Put("/unfollow", app.unfollowUserHandler)
+	//user.Put("/follow", app.followUserHandler)
+	//user.Put("/unfollow", app.unfollowUserHandler)
 	
 
 	//Auth routes

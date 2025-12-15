@@ -169,7 +169,7 @@ func (app *application) createTokenHandler(c *fiber.Ctx) error {
 	if err != nil {
 		switch err {
 		case store.ErrNotFound:
-			return app.unauthorizedErrorResponse(c, err)
+			return app.notFoundResponse(c, err)
 		default:
 			return app.internalServerError(c, err)
 		}
@@ -196,8 +196,9 @@ func (app *application) createTokenHandler(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(token)
 }
 
-type Password struct {
-	Password string `json:"password" validate:"required,min=3,max=72"`
+type PasswordPayload struct {
+	NewPassword string `json:"new_password" validate:"required,min=3,max=72"`
+	OldPassword string `json:"old_password" validate:"required,min=3,max=72"`
 }
 
 // ChangePasswordHandler godoc
@@ -213,30 +214,31 @@ type Password struct {
 //	@Failure		401		{object}	error	"Unauthorized / current password invalid"
 //	@Failure		500		{object}	error	"Internal server error"
 //	@Security		ApiKeyAuth
-//	@Router			/users/change-password [post]
+//	@Router			/users/change-password [put]
 func (app *application) ChangePasswordHandler(c *fiber.Ctx) error {
 	authUser := getUserFromContext(c)
 
-	var payload Password
+	var payload PasswordPayload
 
 	if err := c.BodyParser(&payload); err != nil {
 		return app.badRequestResponse(c, err)
 	}
 
-	user, err := app.store.Users.GetByEmail(c.Context(), authUser.Email)
+	user, err := app.store.Users.GetByID(c.Context(), authUser.ID)
 	if err != nil {
 		switch err {
 		case store.ErrNotFound:
-			return app.unauthorizedErrorResponse(c, err)
+			return app.notFoundResponse(c, err)
 		default:
 			return app.internalServerError(c, err)
 		}
 	}
-	if err := user.Authenticate(payload.Password); err != nil {
+	
+	if err := user.Authenticate(payload.OldPassword); err != nil {
 		return app.unauthorizedErrorResponse(c, err)
 	}
 
-	if err := app.store.Users.UpdatePassword(c.Context(), authUser, payload.Password); err != nil {
+	if err := app.store.Users.UpdatePassword(c.Context(), authUser, payload.NewPassword); err != nil {
 	switch err{
 	case store.ErrConflict:
 		return app.conflictResponse(c, err)

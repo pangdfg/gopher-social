@@ -12,6 +12,10 @@ type userKey string
 
 const userCtx userKey = "user"
 
+type userWithPosts struct {
+        *store.User
+        Posts []store.Post `json:"posts"`
+    }
 // GetUser godoc
 //
 //	@Summary		Fetches a user profile
@@ -32,6 +36,24 @@ func (app *application) getUserHandler(c *fiber.Ctx) error {
 		return app.badRequestResponse(c, err)
 	}
 
+	fq := store.PaginatedFeedQuery{
+		Limit:  20,
+		Offset: 0,
+		Sort:   "desc",
+		Tags:   []string{},
+		Search: "",
+	}
+
+	fq, err = fq.Parse(c) 
+	if err != nil {
+		return app.badRequestResponse(c, err)
+	}
+
+	if err := Validate.Struct(fq); err != nil {
+		return app.badRequestResponse(c, err)
+	}
+
+
 	user, err := app.getUser(c.Context(), uint(userID))
 	if err != nil {
 		switch err {
@@ -41,10 +63,21 @@ func (app *application) getUserHandler(c *fiber.Ctx) error {
 			return app.internalServerError(c, err)
 		}
 	}
-
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"data": user,
-	})
+	post, err := app.store.Posts.GetOneUserFeed(c.Context(), fq, uint(userID))
+	if err != nil {
+		switch err {
+		case store.ErrNotFound:
+			return app.notFoundResponse(c, err)
+		default:
+			return app.internalServerError(c, err)
+		}
+	}
+	
+	userpost := userWithPosts{
+		User : user,
+		Posts : post,
+	}
+	return c.Status(fiber.StatusOK).JSON(userpost)
 }
 
 // FollowUser godoc

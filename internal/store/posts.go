@@ -93,8 +93,57 @@ func (s *PostStore) GetUserFeed(ctx context.Context, fq PaginatedFeedQuery) ([]P
 	
 	query := s.db.WithContext(ctx).
 		Preload("User").
+		Preload("User.Role").
 		Preload("Comments").
-		Preload("Comments.User")
+		Preload("Comments.User").
+		Preload("Comments.User.Role")
+
+	if fq.Search != "" {
+		query = query.Where("title ILIKE ? OR content ILIKE ?", "%"+fq.Search+"%", "%"+fq.Search+"%")
+	}
+
+	if len(fq.Tags) > 0 {
+		query = query.Joins("JOIN post_tags pt ON pt.post_id = posts.id").
+			Joins("JOIN tags t ON t.id = pt.tag_id").
+			Where("t.name IN ?", fq.Tags).
+			Distinct("posts.id") // Ensure we don't get duplicate posts if multiple tags match
+	}
+
+	if fq.Since != "" {
+		query = query.Where("created_at >= ?", fq.Since)
+	}
+	if fq.Until != "" {
+		query = query.Where("created_at <= ?", fq.Until)
+	}
+
+	if fq.Sort == "" {
+		fq.Sort = "desc"
+	}
+
+	query = query.Order("posts.created_at " + fq.Sort)
+
+	err := query.
+		Limit(fq.Limit).
+		Offset(fq.Offset).
+		Find(&posts).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return posts, nil
+}
+
+func (s *PostStore) GetOneUserFeed(ctx context.Context, fq PaginatedFeedQuery, UserID uint) ([]Post, error) {
+	var posts []Post
+	
+	query := s.db.WithContext(ctx).
+		Preload("User").
+		Preload("User.Role").
+		Preload("Comments").
+		Preload("Comments.User").
+		Preload("Comments.User.Role").
+		Where("user_id = ?", UserID)
 
 	if fq.Search != "" {
 		query = query.Where("title ILIKE ? OR content ILIKE ?", "%"+fq.Search+"%", "%"+fq.Search+"%")
