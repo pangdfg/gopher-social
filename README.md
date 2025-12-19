@@ -7,9 +7,9 @@ nodemon --exec go run ./cmd/api
 ```
 
 ```go
-go run ./cmd/api/migrate.go migrate up
+go run ./cmd/api/ migrate up
 ```
 
 ```go
-go run ./cmd/api/migrate.go migrate down
+go run ./cmd/api/ migrate down
 ```

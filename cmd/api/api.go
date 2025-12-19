@@ -47,7 +47,7 @@ func mount(c *fiber.App, app *application) {
 	//Users routes
 	users := v1.Group("/users")
 	
-	users.Put("/activate/{token}", app.activateUserHandler)
+	users.Put("/activate/:token", app.activateUserHandler)
 
 	users.Use(app.AuthTokenMiddleware)
 	users.Put("/update-username", app.updateUsernameHandler)

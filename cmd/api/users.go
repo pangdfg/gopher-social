@@ -164,9 +164,14 @@ func (app *application) unfollowUserHandler(c *fiber.Ctx) error {
 //	@Router			/users/activate/{token} [put]
 func (app *application) activateUserHandler(c *fiber.Ctx) error {
 	token := c.Params("token")
-	Email, err := app.AuthActive(c, token)
+	email, err := app.AuthActive(c, token)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "invalid or expired token",
+		})
+	}
 
-	gtUer, err := app.store.Users.GetByEmail(c.Context(),Email)
+	gtUer, err := app.store.Users.GetByEmail(c.Context(),email)
 		if err != nil {
 		switch err {
 		case store.ErrNotFound:

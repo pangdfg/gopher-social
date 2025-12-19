@@ -1,8 +1,6 @@
 package main
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"time"
 
@@ -67,19 +65,23 @@ func (app *application) registerUserHandler(c *fiber.Ctx) error {
 		RoleID: role.ID,
 	}
 
-	plainToken := uuid.New().String()
-	hash := sha256.Sum256([]byte(plainToken))
-	hashToken := hex.EncodeToString(hash[:])
+	claims := jwt.MapClaims{
+    "email": payload.Email,
+	"id" : uuid.New().String(),
+    "exp":   time.Now().Add(24 * time.Hour).Unix(), 
+    "type":  "activation",
+	}
 
+	token, err := app.authenticator.GenerateToken(claims)
 
 	userWithToken := UserWithToken{
 		Username:  user.Username,
 		Email: user.Email,
 		Role: role,
-		Token: hashToken,
+		Token: token,
 	}
 
-	activationURL := fmt.Sprintf("%s/confirm/%s", app.config.frontendURL, plainToken)
+	activationURL := fmt.Sprintf("%s/confirm/%s", app.config.frontendURL, token)
 	isProdEnv := app.config.env == "production"
 
 	err = app.store.Users.Create(ctx, user, payload.Password)
@@ -94,7 +96,6 @@ func (app *application) registerUserHandler(c *fiber.Ctx) error {
 		}
 		return err
 	}
-	if  app.config.mail.enabled{ 
 		mailVars := struct {
 			Username      string
 			ActivationURL string
@@ -102,39 +103,19 @@ func (app *application) registerUserHandler(c *fiber.Ctx) error {
 			Username:      user.Username,
 			ActivationURL: activationURL,
 		}
-
+		
 		status, err := app.mailer.Send(mailer.UserWelcomeTemplate, user.Username, user.Email, mailVars, !isProdEnv)
-		if err != nil {
+		if err != nil {	
 			app.logger.Errorw("error sending welcome email", "error", err)
 
 			if err := app.store.Users.Delete(ctx, user.ID); err != nil {
 				app.logger.Errorw("error deleting user", "error", err)
 			}
-
+			
 			return app.internalServerError(c, err)
 		}
 
 		app.logger.Infow("Email sent", "status code", status)
-	}else{
-		gtUer, err := app.store.Users.GetByEmail(ctx, user.Email)
-		if err != nil {
-		switch err {
-		case store.ErrNotFound:
-			return app.notFoundResponse(c, err)
-		default:
-			return app.internalServerError(c, err)
-		}
-	}
-		if err := app.store.Users.Activate(ctx, gtUer.ID); err != nil { 
-			switch err {
-		case store.ErrNotFound:
-			return app.notFoundResponse(c, err)
-		default:
-			app.logger.Errorw("error updating user status after mailer skip", "error", err, "userID", user.ID)
-			return app.internalServerError(c, err)
-			}
-		}
-	}
 	
 
 	return c.Status(fiber.StatusCreated).JSON(userWithToken)

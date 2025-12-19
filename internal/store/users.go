@@ -114,7 +114,7 @@ func (s *UserStore) GetByEmail(ctx context.Context, email string) (*User, error)
 
 
 func (s *UserStore) Activate(ctx context.Context, userID uint) error {
-	return s.db.Model(&User{}).Where("id = ?", userID).Update("is_active", true).Error
+	return s.db.Model(&User{}).Where("id = ? ", userID).Update("is_active", true).Error
 }
 
 func (s *UserStore) Delete(ctx context.Context, userID uint) error {
@@ -129,7 +129,7 @@ func (s *UserStore) Delete(ctx context.Context, userID uint) error {
 }
 
 func (s *UserStore) UpdateUsername(ctx context.Context, user *User) error {
-	tx := s.db.Model(&User{}).Where("id = ?", user.ID).Updates(map[string]interface{}{
+	tx := s.db.Model(&User{}).Where("id = ? AND is_active = ?", user.ID, true).Updates(map[string]interface{}{
 		"Username": user.Username,
 	})
 	if tx.Error != nil {
@@ -150,7 +150,7 @@ func (s *UserStore) UpdatePassword(ctx context.Context, user *User, plain string
 		return err
 	}
 
-	tx := s.db.Model(&User{}).Where("id = ?", user.ID).Updates(map[string]interface{}{
+	tx := s.db.Model(&User{}).Where("id = ? AND is_active = ?", user.ID, true).Updates(map[string]interface{}{
 		"Password": p.hash,
 	})
 

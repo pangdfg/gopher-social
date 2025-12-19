@@ -47,7 +47,7 @@ func (app *application) AuthTokenMiddleware(c *fiber.Ctx) error {
 
 func (app *application) AuthActive(c *fiber.Ctx, token string)  (Email string, err error) {
 
-	jwtToken, err := app.authenticator.ValidateToken(token)
+	jwtToken, err := app.authenticator.ValidateTokenAuth(token)
 	if err != nil {
 		return "", app.unauthorizedError(c, err)
 	}

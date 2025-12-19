@@ -47,3 +47,21 @@ func (a *JWTAuthenticator) ValidateToken(token string) (*jwt.Token, error) {
 		jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Name}),
 	)
 }
+
+func (a *JWTAuthenticator) ValidateTokenAuth(tokenString string) (*jwt.Token, error) {
+    token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+        if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+            return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+        }
+        return []byte(a.secret), nil 
+    })
+    if err != nil {
+        return nil, err
+    }
+
+    if !token.Valid {
+        return nil, fmt.Errorf("invalid token")
+    }
+
+    return token, nil
+}

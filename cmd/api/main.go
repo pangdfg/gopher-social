@@ -13,6 +13,7 @@ import (
 	"github.com/pangdfg/gopher-social/internal/auth"
 	"github.com/pangdfg/gopher-social/internal/db"
 	"github.com/pangdfg/gopher-social/internal/env"
+	"github.com/pangdfg/gopher-social/internal/mailer"
 	"github.com/pangdfg/gopher-social/internal/ratelimiter"
 	"github.com/pangdfg/gopher-social/internal/store"
 	"github.com/pangdfg/gopher-social/internal/store/cache"
@@ -100,6 +101,16 @@ func main() {
 
 		defer rdb.Close()
 	}
+	var mailerClient mailer.Client
+	if cfg.env == "development" || cfg.mail.mailTrap.apiKey == "DUMMY_KEY" {
+		mailerClient = &mailer.MockClient{}
+	} else {
+		mailerClient, err = mailer.NewMailTrapClient(cfg.mail.mailTrap.apiKey, cfg.mail.fromEmail)
+		//mailerClient = mailer.NewSendgrid(cfg.mail.sendGrid.apiKey, cfg.mail.fromEmail)
+		if err != nil {
+			logger.Fatal(err)
+		}
+	}
 
 	store := store.NewStorage(DB)
 	cacheStorage := cache.NewRedisStorage(rdb)
@@ -109,6 +120,7 @@ func main() {
 		store:         store,
 		cacheStorage:  cacheStorage,
 		logger:        logger,
+		mailer:        mailerClient,
 		authenticator: jwtAuthenticator,
 		rateLimiter:   rateLimiter,
 	}
