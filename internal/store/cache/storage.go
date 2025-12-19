@@ -7,19 +7,23 @@ import (
 	"github.com/pangdfg/gopher-social/internal/store"
 )
 
-type UserCacheStore interface {
-	Get(context.Context, uint) (*store.User, error)
-	Set(context.Context, *store.User) error
-	Delete(context.Context, uint)
-}
-
 type Storage struct {
-	Users UserCacheStore
+	UserCache interface {
+		Get(context.Context, uint) (*store.User, error)
+		Set(context.Context, *store.User) error
+		Delete(context.Context, uint)
+	}	
+	PostCache interface {
+		Get(context.Context, uint) (*store.Post, error)
+		Set(context.Context, *store.Post) error
+		Delete(context.Context, uint)
+	}
 }
 
 func NewRedisStorage(rbd *redis.Client) Storage {
 	return Storage{
-		Users: &UserStore{rdb: rbd},
+		UserCache: &UserStore{rdb: rbd},
+		PostCache: &PostStore{rdb: rbd},
 	}
 }
 

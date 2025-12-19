@@ -110,7 +110,7 @@ func main() {
 		if err != nil {
 			logger.Fatal(err)
 		}
-	}
+	}	
 
 	store := store.NewStorage(DB)
 	cacheStorage := cache.NewRedisStorage(rdb)

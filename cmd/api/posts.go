@@ -19,6 +19,47 @@ type CreatePostPayload struct {
 	Tags    []string `json:"tags"`
 }
 
+func (app *application) postsContextMiddleware(c *fiber.Ctx) error {
+	idParam := c.Params("postID")
+	id, err := strconv.ParseInt(idParam, 10, 64)
+	if err != nil {
+		return app.badRequestResponse(c, err)
+	}
+	var post *store.Post
+
+	if app.config.redisCfg.enabled {
+		post, err = app.cacheStorage.PostCache.Get(c.Context(), uint(id))
+		if err != nil && err != store.ErrNotFound {
+			app.logger.Warnw("cache get failed", "postID", id, "error", err.Error())
+			post = nil
+		}
+	}
+
+	if post == nil {
+		post, err = app.store.Posts.GetByID(c.Context(), uint(id))
+		if err != nil {
+			switch {
+			case errors.Is(err, store.ErrNotFound):
+				return app.notFoundResponse(c, err)
+			default:
+				return app.internalServerError(c, err)
+			}
+		}
+
+		c.Locals("post", post)
+
+		if app.config.redisCfg.enabled {
+			if err := app.cacheStorage.PostCache.Set(c.Context(), post); err != nil {
+				app.logger.Warnw("cache set failed", "postID", post.ID, "error", err.Error())
+			}
+		}
+	} else {
+		c.Locals("post", post)
+	}
+
+	return c.Next()
+}
+
 // CreatePost godoc
 //
 //	@Summary		Creates a post
@@ -71,14 +112,14 @@ func (app *application) createPostHandler(c *fiber.Ctx) error {
 //	@Security		ApiKeyAuth
 //	@Router			/posts/{id} [get]
 func (app *application) getPostHandler(c *fiber.Ctx) error {
-	post := c.Locals("post").(*store.Post)
-
-	comments, err := app.store.Comments.GetByPostID(c.Context(), post.ID)
-	if err != nil {
-		return app.internalServerError(c, err)
+	postInterface := c.Locals("post")
+	post, ok := postInterface.(*store.Post)
+	if !ok || post == nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "post not found",
+		})
 	}
 
-	post.Comments = comments
 
 	return c.Status(fiber.StatusOK).JSON(post)
 }
@@ -182,30 +223,8 @@ func (app *application) updatePostHandler(c *fiber.Ctx) error {
 	if err != nil {
 		return app.internalServerError(c, err)
 	}
-
+	
 	return c.Status(fiber.StatusOK).JSON(updatedPost)
-}
-
-func (app *application) postsContextMiddleware(c *fiber.Ctx) error {
-	idParam := c.Params("postID")
-	id, err := strconv.ParseInt(idParam, 10, 64)
-	if err != nil {
-		return app.badRequestResponse(c, err)
-	}
-
-	post, err := app.store.Posts.GetByID(c.Context(), uint(id))
-	if err != nil {
-		switch {
-		case errors.Is(err, store.ErrNotFound):
-			return app.notFoundResponse(c, err)
-		default:
-			return app.internalServerError(c, err)
-		}
-	}
-
-	c.Locals("post", post)
-
-	return c.Next()
 }
 
 // CreateComment godoc

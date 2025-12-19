@@ -68,7 +68,7 @@ func (app *application) checkRolePrecedence(c *fiber.Ctx, user *store.User, role
 	return user.Role.Level <= role.Level, nil
 }
 
-func (app *application) checkPostOwnership( requiredRole string) fiber.Handler {
+func (app *application) checkPostOwnership() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		user := c.Locals("user").(*store.User)
 		post := c.Locals("post").(*store.Post)
@@ -77,7 +77,7 @@ func (app *application) checkPostOwnership( requiredRole string) fiber.Handler {
 			return c.Next()
 		}
 
-		allowed, err := app.checkRolePrecedence(c , user, requiredRole)
+		allowed, err := app.checkRolePrecedence(c , user, "user")
 		if err != nil {
 			return app.internalServerError(c, err)
 		}
@@ -107,7 +107,7 @@ func (app *application) getUser(ctx context.Context, id uint) (*store.User, erro
 	if !app.config.redisCfg.enabled {
 		return app.store.Users.GetByID(ctx, id)
 	}
-	user, err := app.cacheStorage.Users.Get(ctx, id)
+	user, err := app.cacheStorage.UserCache.Get(ctx, id)
 	if err != nil {
 		if err != store.ErrNotFound {
 			return nil, err
@@ -117,10 +117,11 @@ func (app *application) getUser(ctx context.Context, id uint) (*store.User, erro
 		if err != nil {
 			return nil, err
 		}
-		err = app.cacheStorage.Users.Set(ctx, user)
+		err = app.cacheStorage.UserCache.Set(ctx, user)
 		if err != nil {
 			return nil, err
 		}
 	}
 	return user, nil
 }
+

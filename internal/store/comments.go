@@ -27,21 +27,6 @@ func NewCommentStore(db *gorm.DB) *CommentStore {
 	return &CommentStore{db: db}
 }
 
-// GetByPostID fetches comments for a given post
-func (s *CommentStore) GetByPostID(ctx context.Context, postID uint) ([]Comment, error) {
-	var comments []Comment
-	err := s.db.Preload("User").
-		Preload("User.Role").
-		Where("post_id = ?", postID).
-		Order("created_at DESC").
-		Find(&comments).Error
-
-	if err != nil {
-		return nil, err
-	}
-	return comments, nil
-}
-
 
 func (s *CommentStore) Create(ctx context.Context, comment *Comment) error {
     return s.db.WithContext(ctx).Create(comment).Error

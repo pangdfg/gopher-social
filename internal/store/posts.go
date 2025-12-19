@@ -46,8 +46,10 @@ func (s *PostStore) GetByID(ctx context.Context, id uint) (*Post, error) {
 	post := &Post{}
 	err := s.db.WithContext(ctx).
 				Preload("User").
+				Preload("User.Role").
 				Preload("Comments").
 				Preload("Comments.User").
+				Preload("Comments.User.Role").
 				First(post, id).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {

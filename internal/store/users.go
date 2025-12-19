@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/go-redis/redis/v8"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -49,10 +50,14 @@ func (p *password) Compare(text string) error {
 
 type UserStore struct {
 	db *gorm.DB
+	cache *redis.Client
 }
 
-func NewUserStore(db *gorm.DB) *UserStore {
-	return &UserStore{db: db}
+func NewUserStore(db *gorm.DB, cache *redis.Client) *UserStore {
+	return &UserStore{
+		db: db,
+		cache: cache,
+	}
 }
 
 func (u *User) Authenticate(plain string) error {
@@ -96,7 +101,6 @@ func (s *UserStore) GetByID(ctx context.Context, userID uint) (*User, error) {
 		}
 		return nil, err
 	}
-
 	return user, nil
 }
 

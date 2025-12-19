@@ -75,6 +75,6 @@ func mount(c *fiber.App, app *application) {
 	post.Get("/", app.getPostHandler)
 	
 	post.Post("/", app.createCommentHandler)
-	post.Patch("/",  app.updatePostHandler)
-	post.Delete("/", app.deletePostHandler)
+	post.Patch("/", app.checkPostOwnership(), app.updatePostHandler)
+	post.Delete("/", app.checkPostOwnership(), app.deletePostHandler)
 }

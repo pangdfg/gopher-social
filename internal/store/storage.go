@@ -31,7 +31,6 @@ type Storage struct {
 	}
 	Comments interface {
 		Create(ctx context.Context, c *Comment) error
-		GetByPostID(ctx context.Context, postID uint) ([]Comment, error)
 	}
 	Followers interface {
 		Follow(ctx context.Context, userID, followerID uint) error
