@@ -249,6 +249,47 @@
 			"name": "Posts",
 			"item": [
 				{
+					"name": "Tags",
+					"item": [
+						{
+							"name": "Get Tag",
+							"request": {
+								"method": "GET",
+								"header": []
+							},
+							"response": []
+						},
+						{
+							"name": "Get Title Tag",
+							"request": {
+								"method": "GET",
+								"header": []
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Tag",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/v1/tags/{{tagID}}/",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"v1",
+										"tags",
+										"{{tagID}}",
+										""
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
 					"name": "Create Post",
 					"request": {
 						"auth": {
@@ -256,7 +297,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJnb3BoZXJzb2NpYWwiLCJleHAiOjE3NjU5NTM1NjcsImlhdCI6MTc2NTY5NDM2NywiaXNzIjoiZ29waGVyc29jaWFsIiwibmJmIjoxNzY1Njk0MzY3LCJyb2xlIjoidXNlciIsInN1YiI6MX0.pv66zi5MDpQrezMXXanIPUF5nSNcwHIs2YTGUv9LKu4",
+									"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJnb3BoZXJzb2NpYWwiLCJleHAiOjE3NjYzOTkxMTQsImlhdCI6MTc2NjEzOTkxNCwiaXNzIjoiZ29waGVyc29jaWFsIiwibmJmIjoxNzY2MTM5OTE0LCJyb2xlIjoidXNlciIsInN1YiI6Mn0.x4ZAKlzK5tMPXHDAhi_2-e1ki_C7gT22vCWzeBFwfM0",
 									"type": "string"
 								}
 							]
@@ -274,7 +315,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"title\": \"test1\",\n  \"content\": \"Hello world!\"\n}"
+							"raw": "{\n  \"title\": \"test233\",\n  \"content\": \"Hello world!111\",\n  \"tags\": [\"Godd\", \"Red\"]\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/v1/posts/",
