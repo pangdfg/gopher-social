@@ -44,6 +44,14 @@ func mount(c *fiber.App, app *application) {
 	//feed
 	v1.Get("/feed", app.getUserFeedHandler)
 
+	//tag
+	tag := v1.Group("/tags")
+
+	tag.Get("/", app.getTagTitleHandler)
+	tag.Get("/:tagID", app.getTagHandler)
+
+	tag.Delete("/:tagID",app.AuthTokenMiddleware, app.deleteTagHandler)
+
 	//Users routes
 	users := v1.Group("/users")
 	

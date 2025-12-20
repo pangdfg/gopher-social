@@ -22,7 +22,6 @@ type CommentStore struct {
 	db *gorm.DB
 }
 
-// NewCommentStore creates a new CommentStore
 func NewCommentStore(db *gorm.DB) *CommentStore {
 	return &CommentStore{db: db}
 }

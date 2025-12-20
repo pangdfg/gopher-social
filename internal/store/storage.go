@@ -32,6 +32,12 @@ type Storage struct {
 	Comments interface {
 		Create(ctx context.Context, c *Comment) error
 	}
+	Tags interface {
+		GetByID(ctx context.Context, id uint) (*Tag, error)
+		Create(ctx context.Context, tag *Tag) error
+		Delete(ctx context.Context, id uint) error
+		Get(ctx context.Context, fq PaginatedFeedQuery) ([]Tag, error)
+	}
 	Followers interface {
 		Follow(ctx context.Context, userID, followerID uint) error
 		Unfollow(ctx context.Context, followerID, userID uint) error
@@ -46,6 +52,7 @@ func NewStorage(db *gorm.DB) Storage {
 		Posts:     &PostStore{db: db},
 		Users:     &UserStore{db: db},
 		Comments:  &CommentStore{db: db},
+		Tags:      &TagStore{db: db},
 		Followers: &FollowerStore{db: db},
 		Roles:     &RoleStore{db: db},
 	}

@@ -79,16 +79,24 @@ func (app *application) createPostHandler(c *fiber.Ctx) error {
 	if err := c.BodyParser(&payload); err != nil {
 		return app.badRequestResponse(c, err)
 	}
-
+	ctx := c.Context()
 	user := c.Locals("user").(*store.User)
+
+	var tags []store.Tag
+	for _, t := range payload.Tags {
+		tag := store.Tag{Title: t}
+		if err := app.store.Tags.Create(ctx, &tag); err != nil {
+			return app.internalServerError(c, err)
+		}	
+		tags = append(tags, tag)
+	}
 	post := &store.Post{
 		Title:   payload.Title,
 		Content: payload.Content,
-		Tags:    payload.Tags,
 		UserID:  user.ID,
+		Tags: tags,
 	}
 
-	ctx := c.Context()
 	if err := app.store.Posts.Create(ctx, post); err != nil {
 		return app.internalServerError(c, err)
 	}	
@@ -269,4 +277,112 @@ func (app *application) createCommentHandler(c *fiber.Ctx) error {
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
 		"data": comment,
 	})
+}
+
+// getTagHandler godoc
+//
+// @Summary      Get tag by ID
+// @Description  Retrieve a single tag by its ID including related posts.
+// @Tags         tags
+// @Accept       json
+// @Produce      json
+// @Param        tagID   path      int  true  "Tag ID"
+// @Success      200     {object}  store.Tag
+// @Failure      400     {object}  ErrorResponse  "Invalid tag ID"
+// @Failure      404     {object}  ErrorResponse  "Tag not found"
+// @Failure      500     {object}  ErrorResponse  "Internal server error"
+// @Router       /tags/{tagID} [get]
+func (app *application) getTagHandler(c *fiber.Ctx) error {
+	idParam := c.Params("tagID")
+	id, err := strconv.ParseInt(idParam, 10, 64)
+	if err != nil {
+		return app.badRequestResponse(c, err)
+	}
+
+	var tag *store.Tag
+	tag, err = app.store.Tags.GetByID(c.Context(), uint(id))
+	if err != nil {
+		switch {
+		case errors.Is(err, store.ErrNotFound):
+			return app.notFoundResponse(c, err)
+		default:
+			return app.internalServerError(c, err)
+		}
+	}
+
+	return c.Status(fiber.StatusOK).JSON(tag)
+}
+
+// getTagTitleHandler godoc
+//
+// @Summary      List tags
+// @Description  Retrieve a paginated list of tags with optional search and sorting.
+// @Tags         tags
+// @Accept       json
+// @Produce      json
+// @Param        search   query     string  false  "Search by tag title"
+// @Param        limit    query     int     false  "Number of items to return"  default(20)
+// @Param        offset   query     int     false  "Number of items to skip"    default(0)
+// @Param        sort     query     string  false  "Sort order (asc|desc)"       default(desc)
+// @Success      200      {array}   store.Tag
+// @Failure      400      {object}  ErrorResponse  "Invalid query parameters"
+// @Failure      500      {object}  ErrorResponse  "Internal server error"
+// @Router       /tags [get]
+func (app *application) getTagTitleHandler(c *fiber.Ctx) error {
+
+	fq := store.PaginatedFeedQuery{
+		Limit:  20,
+		Offset: 0,
+		Sort:   "desc",
+		Search: "",
+	}
+
+	var err error
+	fq, err = fq.Parse(c) 
+	if err != nil {
+		return app.badRequestResponse(c, err)
+	}
+
+	if err := Validate.Struct(fq); err != nil {
+		return app.badRequestResponse(c, err)
+	}
+
+	tag, err := app.store.Tags.Get(c.Context(), fq)
+	if err != nil {
+		return app.internalServerError(c, err)
+	}
+
+	return c.Status(fiber.StatusOK).JSON(tag)
+}
+
+// DeleteTag godoc
+//
+//	@Summary		Deletes a tag
+//	@Description	Delete a tag by ID
+//	@Tags			tag
+//	@Accept			json
+//	@Produce		json
+//	@Param			id	path		int	true	"Tag ID"
+//	@Success		204	{object} string
+//	@Failure		404	{object}	error
+//	@Failure		500	{object}	error
+//	@Security		ApiKeyAuth
+//	@Router			/tags/{id} [delete]
+func (app *application) deleteTagHandler(c *fiber.Ctx) error {
+	idParam := c.Params("tagID")
+	id, err := strconv.ParseInt(idParam, 10, 64)
+	if err != nil {
+		return app.badRequestResponse(c, err)
+	}
+
+	if err := app.store.Tags.Delete(c.Context(), uint(id)); err != nil {
+		switch {
+		case errors.Is(err, store.ErrNotFound):
+			return app.notFoundResponse(c, err)
+		default:
+			return app.internalServerError(c, err)
+		}
+	}
+
+	return c.SendStatus(fiber.StatusNoContent)
 }

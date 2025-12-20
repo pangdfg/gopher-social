@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/lib/pq"
 	"gorm.io/gorm"
 )
 
@@ -14,17 +13,11 @@ type Post struct {
 	Content   string         `json:"content"`
 	UserID    uint           `json:"user_id"`
 	User      User           `gorm:"foreignKey:UserID" json:"user"`
-	Tags      pq.StringArray `gorm:"type:varchar(100)[]" json:"tags"`
+	Tags      []Tag      	 `gorm:"many2many:post_tags;" json:"tags"`
 	Comments  []Comment      `gorm:"foreignKey:PostID" json:"comments"`
 	Version   int            `gorm:"default:1" json:"version"`
 	CreatedAt time.Time      `json:"created_at"`
 	UpdatedAt time.Time      `json:"updated_at"`
-}
-
-
-type PostWithMetadata struct {
-	Post
-	CommentsCount int `json:"comments_count"`
 }
 
 type PostStore struct {
@@ -36,7 +29,6 @@ func NewPostStore(db *gorm.DB) *PostStore {
 	return &PostStore{db: db}
 }
 
-
 func (s *PostStore) Create(ctx context.Context, post *Post) error {
 	return s.db.WithContext(ctx).Create(post).Error
 }
@@ -45,6 +37,7 @@ func (s *PostStore) Create(ctx context.Context, post *Post) error {
 func (s *PostStore) GetByID(ctx context.Context, id uint) (*Post, error) {
 	post := &Post{}
 	err := s.db.WithContext(ctx).
+				Preload("Tags").
 				Preload("User").
 				Preload("User.Role").
 				Preload("Comments").
@@ -96,6 +89,7 @@ func (s *PostStore) GetUserFeed(ctx context.Context, fq PaginatedFeedQuery) ([]P
 	query := s.db.WithContext(ctx).
 		Preload("User").
 		Preload("User.Role").
+		Preload("Tags").
 		Preload("Comments").
 		Preload("Comments.User").
 		Preload("Comments.User.Role")
@@ -142,6 +136,7 @@ func (s *PostStore) GetOneUserFeed(ctx context.Context, fq PaginatedFeedQuery, U
 	query := s.db.WithContext(ctx).
 		Preload("User").
 		Preload("User.Role").
+		Preload("Tags").
 		Preload("Comments").
 		Preload("Comments.User").
 		Preload("Comments.User.Role").
