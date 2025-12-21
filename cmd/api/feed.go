@@ -34,8 +34,8 @@ type PaginatedFeedQuery struct {
 //	@Failure		400		{object}	error
 //	@Failure		500		{object}	error
 //	@Security		ApiKeyAuth
-//	@Router			/users/feed [get]
-func (app *application) getUserFeedHandler(c *fiber.Ctx) error {
+//	@Router		    /feed [get]
+func (app *application) getFeedHandler(c *fiber.Ctx) error {
 
 	fq := store.PaginatedFeedQuery{
 		Limit:  20,
@@ -55,12 +55,18 @@ func (app *application) getUserFeedHandler(c *fiber.Ctx) error {
 		return app.badRequestResponse(c, err)
 	}
 
-	feed, err := app.store.Posts.GetUserFeed(c.Context(), fq)
+	feed, err := app.store.Posts.GetFeed(c.Context(), fq)
 	if err != nil {
 		return app.internalServerError(c, err)
 	}
 
-	return c.Status(fiber.StatusOK).JSON(feed)
+	response := NewPostListResponse(
+		feed,
+		fq.Limit,
+		fq.Offset,
+	)
+
+	return app.jsonResponse(c, fiber.StatusOK, response)
 }
 
 func (fq PaginatedFeedQuery) Parse(c *fiber.Ctx) (PaginatedFeedQuery, error) {

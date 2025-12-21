@@ -83,7 +83,7 @@ func (s *PostStore) Delete(ctx context.Context, postID uint) error {
 	return nil
 }
 
-func (s *PostStore) GetUserFeed(ctx context.Context, fq PaginatedFeedQuery) ([]Post, error) {
+func (s *PostStore) GetFeed(ctx context.Context, fq PaginatedFeedQuery) ([]Post, error) {
 	var posts []Post
 	
 	query := s.db.WithContext(ctx).
@@ -119,6 +119,48 @@ func (s *PostStore) GetUserFeed(ctx context.Context, fq PaginatedFeedQuery) ([]P
 	query = query.Order("posts.created_at " + fq.Sort)
 
 	err := query.
+		Limit(fq.Limit).
+		Offset(fq.Offset).
+		Find(&posts).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return posts, nil
+}
+
+func (s *PostStore) GetByTagID(ctx context.Context, fq PaginatedFeedQuery, TagID uint) ([]Post, error) {
+	var posts []Post
+	
+	query := s.db.WithContext(ctx).
+		Model(&Post{}).
+		Joins("JOIN post_tags pt ON pt.post_id = posts.id").
+		Where("pt.tag_id = ?", TagID)
+
+	if fq.Search != "" {
+		query = query.Where("title ILIKE ?", "%"+fq.Search+"%")
+	}
+
+	if fq.Since != "" {
+		query = query.Where("created_at >= ?", fq.Since)
+	}
+	if fq.Until != "" {
+		query = query.Where("created_at <= ?", fq.Until)
+	}
+
+	if fq.Sort == "" {
+		fq.Sort = "desc"
+	}
+
+	err := query.
+		Preload("User").
+		Preload("User.Role").
+		Preload("Tags").
+		Preload("Comments").
+		Preload("Comments.User").
+		Preload("Comments.User.Role").
+		Order("posts.created_at " + fq.Sort).
 		Limit(fq.Limit).
 		Offset(fq.Offset).
 		Find(&posts).Error

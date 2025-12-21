@@ -28,7 +28,7 @@ func (app *application) jsonResponse(c *fiber.Ctx, status int, data any) error {
 		Data any `json:"data"`
 	}
 
-	return writeJSON(c, status, &envelope{Data: data})
+	return writeJSON(c, status, &envelope{data})
 }
 
 func readJSON(c *fiber.Ctx, dst any) error {

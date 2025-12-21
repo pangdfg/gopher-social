@@ -72,12 +72,15 @@ func (app *application) getUserHandler(c *fiber.Ctx) error {
 			return app.internalServerError(c, err)
 		}
 	}
-	
-	userpost := userWithPosts{
-		User : user,
-		Posts : post,
-	}
-	return c.Status(fiber.StatusOK).JSON(userpost)
+	response := NewUserResponse(
+		&userWithPosts{
+			User : user,
+			Posts : post,
+		},
+		fq.Limit,
+		fq.Offset,
+		)
+	return app.jsonResponse(c, fiber.StatusOK, response)
 }
 
 // FollowUser godoc
@@ -237,7 +240,11 @@ func (app *application) updateUsernameHandler(c *fiber.Ctx) error {
 		return app.internalServerError(c, err)
 	}
 
-	return c.Status(fiber.StatusOK).JSON(updatedUser)
+	return app.jsonResponse(c, fiber.StatusOK, UserMini{
+		ID: updatedUser.ID,
+		Username: updatedUser.Username,
+		Role: updatedUser.Role.Name,
+	})
 }
 
 func getUserFromContext(c *fiber.Ctx) *store.User {

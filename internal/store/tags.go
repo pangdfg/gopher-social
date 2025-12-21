@@ -42,7 +42,6 @@ func (s *TagStore) Create(ctx context.Context, tag *Tag) error {
 func (s *TagStore) GetByID(ctx context.Context, id uint) (*Tag, error) {
 	tag := &Tag{}
 	err := s.db.WithContext(ctx).
-				Preload("Posts").
 				First(tag, id).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {

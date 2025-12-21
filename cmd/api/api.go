@@ -42,7 +42,7 @@ func mount(c *fiber.App, app *application) {
 	v1.Get("/swagger/*", swagger.New())
 
 	//feed
-	v1.Get("/feed", app.getUserFeedHandler)
+	v1.Get("/feed", app.getFeedHandler)
 
 	//tag
 	tag := v1.Group("/tags")

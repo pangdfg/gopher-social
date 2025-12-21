@@ -76,9 +76,10 @@ func (app *application) postsContextMiddleware(c *fiber.Ctx) error {
 //	@Router			/posts [post]
 func (app *application) createPostHandler(c *fiber.Ctx) error {
 	var payload CreatePostPayload
-	if err := c.BodyParser(&payload); err != nil {
-		return app.badRequestResponse(c, err)
+	if err := readJSON(c, &payload); err != nil {
+		return writeJSONError(c, fiber.StatusBadRequest, "invalid JSON body")
 	}
+
 	ctx := c.Context()
 	user := c.Locals("user").(*store.User)
 
@@ -128,8 +129,10 @@ func (app *application) getPostHandler(c *fiber.Ctx) error {
 		})
 	}
 
-
-	return c.Status(fiber.StatusOK).JSON(post)
+	response := NewPostResponse(
+		post,
+	)
+	return c.Status(fiber.StatusOK).JSON(response)
 }
 
 // DeletePost godoc
@@ -191,7 +194,6 @@ type UpdatePostPayload struct {
 }
 
 func (app *application) updatePostHandler(c *fiber.Ctx) error {
-
 	post, ok := c.Locals("post").(*store.Post)
 	if !ok || post == nil {
 		return app.internalServerError(c, errors.New("post context missing"))
@@ -232,7 +234,11 @@ func (app *application) updatePostHandler(c *fiber.Ctx) error {
 		return app.internalServerError(c, err)
 	}
 	
-	return c.Status(fiber.StatusOK).JSON(updatedPost)
+	response := NewPostResponse(
+		updatedPost,
+	)
+
+	return app.jsonResponse(c, fiber.StatusOK, response)
 }
 
 // CreateComment godoc
@@ -251,8 +257,9 @@ func (app *application) updatePostHandler(c *fiber.Ctx) error {
 //	@Router			/posts/{id} [post]
 func (app *application) createCommentHandler(c *fiber.Ctx) error {
 	var payload CreateCommentPayload
-	if err := c.BodyParser(&payload); err != nil {
-		return app.badRequestResponse(c, err)
+
+	if err := readJSON(c, &payload); err != nil {
+		return writeJSONError(c, fiber.StatusBadRequest, "invalid JSON body")
 	}
 	
 	idParam := c.Params("postID")
@@ -274,7 +281,7 @@ func (app *application) createCommentHandler(c *fiber.Ctx) error {
 		return app.internalServerError(c, err)
 	}	
 	
-	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
+	return app.jsonResponse(c, fiber.StatusCreated, fiber.Map{
 		"data": comment,
 	})
 }
@@ -295,8 +302,15 @@ func (app *application) createCommentHandler(c *fiber.Ctx) error {
 func (app *application) getTagHandler(c *fiber.Ctx) error {
 	idParam := c.Params("tagID")
 	id, err := strconv.ParseInt(idParam, 10, 64)
-	if err != nil {
+	if err != nil || id < 1{
 		return app.badRequestResponse(c, err)
+	}
+
+	fq := store.PaginatedFeedQuery{
+		Limit:  20,
+		Offset: 0,
+		Sort:   "desc",
+		Search: "",
 	}
 
 	var tag *store.Tag
@@ -310,7 +324,24 @@ func (app *application) getTagHandler(c *fiber.Ctx) error {
 		}
 	}
 
-	return c.Status(fiber.StatusOK).JSON(tag)
+	post, err := app.store.Posts.GetByTagID(c.Context(), fq, tag.ID)
+	if err != nil {
+		switch {
+		case errors.Is(err, store.ErrNotFound):
+			return app.notFoundResponse(c, err)
+		default:
+			return app.internalServerError(c, err)
+		}
+	}
+
+	response := NewTagPostListResponse(
+		post,
+		tag,
+		fq.Limit,
+		fq.Offset,
+	)
+
+	return app.jsonResponse(c, fiber.StatusOK, response)
 }
 
 // getTagTitleHandler godoc
@@ -343,16 +374,18 @@ func (app *application) getTagTitleHandler(c *fiber.Ctx) error {
 		return app.badRequestResponse(c, err)
 	}
 
-	if err := Validate.Struct(fq); err != nil {
-		return app.badRequestResponse(c, err)
-	}
-
 	tag, err := app.store.Tags.Get(c.Context(), fq)
 	if err != nil {
 		return app.internalServerError(c, err)
 	}
 
-	return c.Status(fiber.StatusOK).JSON(tag)
+	response := NewTagsListResponse(
+		tag,
+		fq.Limit,
+		fq.Offset,
+	)
+
+	return c.Status(fiber.StatusOK).JSON(response)
 }
 
 // DeleteTag godoc

@@ -50,8 +50,12 @@ func (app *application) registerUserHandler(c *fiber.Ctx) error {
 	var payload RegisterUserPayload
 	ctx := c.Context()
 
-	if err := c.BodyParser(&payload); err != nil {
-		return app.badRequestResponse(c, err)
+	if err := readJSON(c, &payload); err != nil {
+		return writeJSONError(c, fiber.StatusBadRequest, "invalid JSON body")
+	}
+
+	if err := Validate.Struct(payload); err != nil {
+		return writeJSONError(c, fiber.StatusBadRequest, "validation failed")
 	}
 	
 	role, err := app.store.Roles.GetByName(ctx, "user")

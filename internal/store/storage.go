@@ -17,8 +17,9 @@ type Storage struct {
 		Create(ctx context.Context, post *Post) error
 		Delete(ctx context.Context, id uint) error
 		Update(ctx context.Context, post *Post) error
-		GetUserFeed(ctx context.Context, fq PaginatedFeedQuery) ([]Post, error)
+		GetFeed(ctx context.Context, fq PaginatedFeedQuery) ([]Post, error)
 		GetOneUserFeed(ctx context.Context, fq PaginatedFeedQuery, UserID uint) ([]Post, error)
+		GetByTagID(ctx context.Context, fq PaginatedFeedQuery, TagID uint) ([]Post, error)
 	}
 	Users interface {
 		GetByID(ctx context.Context, id uint) (*User, error)
@@ -33,7 +34,7 @@ type Storage struct {
 		Create(ctx context.Context, c *Comment) error
 	}
 	Tags interface {
-		GetByID(ctx context.Context, id uint) (*Tag, error)
+		GetByID(ctx context.Context,id uint) (*Tag, error)
 		Create(ctx context.Context, tag *Tag) error
 		Delete(ctx context.Context, id uint) error
 		Get(ctx context.Context, fq PaginatedFeedQuery) ([]Tag, error)
