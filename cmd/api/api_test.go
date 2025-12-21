@@ -48,10 +48,6 @@ func NewRateLimiter(cfg ratelimiterConfig) fiber.Handler {
 
 
 func (a *application_test) mount() *fiber.App {
-	
-	a.app.Get("/v1/health", func(c *fiber.Ctx) error {
-		return c.SendString("ok")
-	})
 
 	if a.config.rateLimiter.Enabled {
 		a.app.Use(NewRateLimiter(ratelimiterConfig{
@@ -60,11 +56,13 @@ func (a *application_test) mount() *fiber.App {
 			Enabled:              a.config.rateLimiter.Enabled,
 		}))
 	}
-
+	a.app.Get("/v1/health", func(c *fiber.Ctx) error {
+		return c.SendString("ok")
+	})
 	return a.app
 }
 
-func TestApplication(cfg config) *application_test {
+func newTestApplication(cfg config) *application_test {
 	app := fiber.New()
 	inst := &application_test{
 		app:    app,
@@ -95,7 +93,7 @@ var _ = Describe("API Test", func() {
 			},
 		}
 
-		appInst = TestApplication(cfg)
+		appInst = newTestApplication(cfg)
 		mockIP = "192.168.1.1"
 	})
 
